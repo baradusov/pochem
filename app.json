@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "converter",
-    "slug": "converter",
+    "name": "почём",
+    "slug": "pochem",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.baradusov.pochem"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.baradusov.pochem"
     },
     "web": {
       "favicon": "./assets/favicon.png"
