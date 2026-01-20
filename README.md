@@ -23,8 +23,11 @@ npm start
 # iOS симулятор
 npm run ios
 
-# iOS на реальном устройстве
+# iOS на реальном устройстве (dev)
 npm run ios -- --device
+
+# iOS на реальном устройстве (release, работает без дев-сервера)
+npm run ios -- --configuration Release --device
 
 # Android
 npm run android
