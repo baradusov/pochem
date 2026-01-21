@@ -8,7 +8,7 @@ You are not just writing code. You are shaping the future of this project. The p
 
 Fight entropy. Leave the codebase better than you found it.
 
-## Clean Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
