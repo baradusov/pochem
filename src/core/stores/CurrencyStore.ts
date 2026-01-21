@@ -118,6 +118,8 @@ export class CurrencyStore {
 
     if (this.activeCurrency === oldCurrency) {
       this.setActiveCurrency(newCurrency);
+      const amount = this.parseInput(this.inputValue);
+      this.setBaseAmountEUR(this.toEUR(amount, newCurrency));
     }
 
     await this.storagePort.saveSelectedCurrencies(updated);
