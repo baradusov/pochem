@@ -1,4 +1,4 @@
-import { CurrencyCode, CURRENCIES, ExchangeRates } from '../../core/entities/Currency';
+import { AVAILABLE_CURRENCIES, CurrencyCode, ExchangeRates } from '../../core/entities/Currency';
 import { ExchangeRatePort } from '../../core/ports/ExchangeRatePort';
 
 const API_URL = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json';
@@ -20,7 +20,7 @@ export class ExchangeRateAdapter implements ExchangeRatePort {
 
     const rates: Record<CurrencyCode, number> = {} as Record<CurrencyCode, number>;
 
-    for (const currency of CURRENCIES) {
+    for (const currency of AVAILABLE_CURRENCIES) {
       const code = currency.toLowerCase();
       if (code === 'eur') {
         rates[currency] = 1;

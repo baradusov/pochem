@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { CURRENCIES, CurrencyCode } from '../core/entities/Currency';
+import { CurrencyCode } from '../core/entities/Currency';
 import { CurrencyBlock } from '../components/CurrencyBlock';
+import { CurrencyPicker } from '../components/CurrencyPicker';
 import { useCurrency } from '../hooks/useCurrency';
 
 const INPUT_ACCESSORY_ID = 'currencyInputAccessory';
@@ -27,9 +28,11 @@ export const ConverterScreen = observer(function ConverterScreen() {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const contentHeight = windowHeight - insets.top;
-  const blockHeight = contentHeight / CURRENCIES.length;
+  const blockHeight = contentHeight / store.selectedCurrencies.length;
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
@@ -54,7 +57,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
 
   useEffect(() => {
     if (keyboardHeight > 0) {
-      const activeIndex = CURRENCIES.indexOf(store.activeCurrency);
+      const activeIndex = store.selectedCurrencies.indexOf(store.activeCurrency);
       const blockTop = activeIndex * blockHeight;
       const blockBottom = blockTop + blockHeight;
       const visibleHeight = contentHeight - keyboardHeight;
@@ -67,11 +70,30 @@ export const ConverterScreen = observer(function ConverterScreen() {
 
       scrollViewRef.current?.scrollTo({ y: scrollY, animated: true });
     }
-  }, [store.activeCurrency, keyboardHeight, blockHeight, contentHeight]);
+  }, [store.activeCurrency, store.selectedCurrencies, keyboardHeight, blockHeight, contentHeight]);
 
   const handleCurrencyPress = (currency: CurrencyCode) => {
     store.selectCurrency(currency);
     inputRef.current?.focus();
+  };
+
+  const handleCurrencyCodePress = (index: number) => {
+    Keyboard.dismiss();
+    setEditingIndex(index);
+    setPickerVisible(true);
+  };
+
+  const handlePickerSelect = (currency: CurrencyCode) => {
+    if (editingIndex !== null) {
+      store.replaceCurrency(editingIndex, currency);
+    }
+    setPickerVisible(false);
+    setEditingIndex(null);
+  };
+
+  const handlePickerClose = () => {
+    setPickerVisible(false);
+    setEditingIndex(null);
   };
 
   const handleChangeText = (text: string) => {
@@ -103,16 +125,25 @@ export const ConverterScreen = observer(function ConverterScreen() {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {CURRENCIES.map((currency, index) => (
+        {store.selectedCurrencies.map((currency, index) => (
           <CurrencyBlock
-            key={currency}
+            key={`${index}-${currency}`}
             currency={currency}
-            isLast={index === CURRENCIES.length - 1}
+            isLast={index === store.selectedCurrencies.length - 1}
             onPress={handleCurrencyPress}
+            onCurrencyCodePress={() => handleCurrencyCodePress(index)}
             isKeyboardVisible={keyboardHeight > 0}
           />
         ))}
       </ScrollView>
+
+      <CurrencyPicker
+        visible={pickerVisible}
+        currentCurrency={editingIndex !== null ? store.selectedCurrencies[editingIndex] : 'EUR'}
+        disabledCurrencies={store.selectedCurrencies}
+        onSelect={handlePickerSelect}
+        onClose={handlePickerClose}
+      />
 
       {Platform.OS === 'ios' && (
         <InputAccessoryView nativeID={INPUT_ACCESSORY_ID}>

@@ -14,6 +14,7 @@ interface CurrencyBlockProps {
   currency: CurrencyCode;
   isLast: boolean;
   onPress: (currency: CurrencyCode) => void;
+  onCurrencyCodePress: () => void;
   isKeyboardVisible: boolean;
 }
 
@@ -25,6 +26,7 @@ export const CurrencyBlock = observer(function CurrencyBlock({
   currency,
   isLast,
   onPress,
+  onCurrencyCodePress,
   isKeyboardVisible,
 }: CurrencyBlockProps) {
   const store = useCurrency();
@@ -70,7 +72,15 @@ export const CurrencyBlock = observer(function CurrencyBlock({
       onPress={handlePress}
       onLayout={onContainerLayout}
     >
-      <Text style={styles.currencyCode}>{currency}</Text>
+      <View style={styles.currencyCodeContainer}>
+        <Pressable onPress={onCurrencyCodePress} hitSlop={8}>
+          <Text style={styles.currencyCode}>
+            {currency}
+            <Text style={styles.dropIcon}>⇅</Text>
+          </Text>
+
+        </Pressable>
+      </View>
 
       <View style={styles.valueContainer}>
         <Text
@@ -97,13 +107,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#000',
   },
-  currencyCode: {
+  currencyCodeContainer: {
     position: 'absolute',
     top: 12,
     right: 16,
-    fontSize: 16,
+  },
+  currencyCode: {
+    fontSize: 18,
     fontWeight: '500',
     color: '#000',
+  },
+  dropIcon: {
+    fontSize: 16,
+    fontWeight: '200'
   },
   valueContainer: {
     flex: 1,

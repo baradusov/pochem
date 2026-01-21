@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ExchangeRates } from '../../core/entities/Currency';
+import { CurrencyCode, ExchangeRates } from '../../core/entities/Currency';
 import { StoragePort } from '../../core/ports/StoragePort';
 
 const RATES_KEY = 'exchange_rates';
+const SELECTED_CURRENCIES_KEY = 'selected_currencies';
 
 export class AsyncStorageAdapter implements StoragePort {
   async saveRates(rates: ExchangeRates): Promise<void> {
@@ -15,6 +16,21 @@ export class AsyncStorageAdapter implements StoragePort {
 
     try {
       return JSON.parse(data) as ExchangeRates;
+    } catch {
+      return null;
+    }
+  }
+
+  async saveSelectedCurrencies(currencies: CurrencyCode[]): Promise<void> {
+    await AsyncStorage.setItem(SELECTED_CURRENCIES_KEY, JSON.stringify(currencies));
+  }
+
+  async loadSelectedCurrencies(): Promise<CurrencyCode[] | null> {
+    const data = await AsyncStorage.getItem(SELECTED_CURRENCIES_KEY);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as CurrencyCode[];
     } catch {
       return null;
     }
