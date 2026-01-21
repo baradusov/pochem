@@ -37,6 +37,11 @@ export class CurrencyStore {
     this.baseAmountEUR = amount;
   }
 
+  private isCacheValid(rates: ExchangeRates): boolean {
+    const today = new Date().toISOString().split('T')[0];
+    return rates.updatedAt === today;
+  }
+
   private parseInput(value: string): number {
     const normalized = value.replace(/\s/g, '').replace(',', '.');
     const parsed = parseFloat(normalized);
@@ -103,6 +108,11 @@ export class CurrencyStore {
     const cached = await this.storagePort.loadRates();
     if (cached) {
       this.setRates(cached);
+
+      if (this.isCacheValid(cached)) {
+        this.setLoading(false);
+        return;
+      }
     }
 
     try {
