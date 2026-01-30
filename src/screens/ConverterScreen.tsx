@@ -11,12 +11,16 @@ import {
   Platform,
   ScrollView,
   useWindowDimensions,
+  Modal,
+  Pressable,
+  Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { CurrencyCode } from '../core/entities/Currency';
 import { CurrencyBlock } from '../components/CurrencyBlock';
 import { CurrencyPicker } from '../components/CurrencyPicker';
+import { SettingsScreen } from './SettingsScreen';
 import { useCurrency } from '../hooks/useCurrency';
 
 const INPUT_ACCESSORY_ID = 'currencyInputAccessory';
@@ -30,6 +34,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   const contentHeight = windowHeight - insets.top;
   const blockHeight = contentHeight / store.selectedCurrencies.length;
@@ -108,6 +113,17 @@ export const ConverterScreen = observer(function ConverterScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
+      {keyboardHeight === 0 && (
+        <View style={[styles.logoContainer, { bottom: insets.bottom + 16 }]}>
+          <Pressable onPress={() => setSettingsVisible(true)} hitSlop={8}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logo}
+            />
+          </Pressable>
+        </View>
+      )}
+
       <TextInput
         ref={inputRef}
         style={styles.hiddenInput}
@@ -151,6 +167,15 @@ export const ConverterScreen = observer(function ConverterScreen() {
         onClose={handlePickerClose}
       />
 
+      <Modal
+        visible={settingsVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <SettingsScreen onClose={() => setSettingsVisible(false)} />
+      </Modal>
+
       {Platform.OS === 'ios' && (
         <InputAccessoryView nativeID={INPUT_ACCESSORY_ID}>
           <View style={styles.accessoryContainer}>
@@ -168,6 +193,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  logoContainer: {
+    position: 'absolute',
+    right: 16,
+    zIndex: 10,
+  },
+  logo: {
+    width: 50,
+    height: 50,
+    resizeMode: 'cover',
+    borderColor: '#000',
+    borderRadius: '50%',
+    borderWidth: 1
   },
   scrollView: {
     flex: 1,
