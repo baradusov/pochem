@@ -15,6 +15,7 @@ interface CurrencyBlockProps {
   isLast: boolean;
   onPress: (currency: CurrencyCode) => void;
   onCurrencyCodePress: () => void;
+  onClear: () => void;
   isKeyboardVisible: boolean;
 }
 
@@ -27,6 +28,7 @@ export const CurrencyBlock = observer(function CurrencyBlock({
   isLast,
   onPress,
   onCurrencyCodePress,
+  onClear,
   isKeyboardVisible,
 }: CurrencyBlockProps) {
   const store = useCurrency();
@@ -66,6 +68,12 @@ export const CurrencyBlock = observer(function CurrencyBlock({
     onPress(currency);
   };
 
+  const handleClear = () => {
+    onClear();
+  };
+
+  const showClear = isActive && isKeyboardVisible && displayValue !== '';
+
   return (
     <Pressable
       style={[styles.container, !isLast && styles.borderBottom]}
@@ -78,9 +86,16 @@ export const CurrencyBlock = observer(function CurrencyBlock({
             {currency}
             <Text style={styles.dropIcon}>⇅</Text>
           </Text>
-
         </Pressable>
       </View>
+
+      {showClear && (
+        <View style={styles.clearContainer}>
+          <Pressable onPress={handleClear} hitSlop={8}>
+            <Text style={styles.clearIcon}>×</Text>
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.valueContainer}>
         <Text
@@ -119,7 +134,16 @@ const styles = StyleSheet.create({
   },
   dropIcon: {
     fontSize: 16,
-    fontWeight: '200'
+    fontWeight: '200',
+  },
+  clearContainer: {
+    position: 'absolute',
+    bottom: 12,
+    right: 16,
+  },
+  clearIcon: {
+    fontSize: 26,
+    color: '#999',
   },
   valueContainer: {
     flex: 1,

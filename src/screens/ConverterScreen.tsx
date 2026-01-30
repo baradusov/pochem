@@ -96,6 +96,10 @@ export const ConverterScreen = observer(function ConverterScreen() {
     setEditingIndex(null);
   };
 
+  const handleClear = () => {
+    store.updateInput('');
+  };
+
   const handleChangeText = (text: string) => {
     store.updateInput(text);
   };
@@ -124,6 +128,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
         scrollEnabled={keyboardHeight > 0}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        keyboardShouldPersistTaps="handled"
       >
         {store.selectedCurrencies.map((currency, index) => (
           <CurrencyBlock
@@ -132,6 +137,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
             isLast={index === store.selectedCurrencies.length - 1}
             onPress={handleCurrencyPress}
             onCurrencyCodePress={() => handleCurrencyCodePress(index)}
+            onClear={handleClear}
             isKeyboardVisible={keyboardHeight > 0}
           />
         ))}
