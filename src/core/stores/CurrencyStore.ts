@@ -6,6 +6,7 @@ import { StoragePort } from '../ports/StoragePort';
 export class CurrencyStore {
   rates: ExchangeRates | null = null;
   selectedCurrencies: CurrencyCode[] = [...DEFAULT_CURRENCIES];
+  blockCount: number = 4;
   activeCurrency: CurrencyCode = 'GEL';
   inputValue: string = '';
   baseAmountEUR: number = 0;
@@ -40,6 +41,14 @@ export class CurrencyStore {
 
   private setSelectedCurrencies(currencies: CurrencyCode[]): void {
     this.selectedCurrencies = currencies;
+  }
+
+  private setBlockCountValue(count: number): void {
+    this.blockCount = count;
+  }
+
+  get visibleCurrencies(): CurrencyCode[] {
+    return this.selectedCurrencies.slice(0, this.blockCount);
   }
 
   private isCacheValid(rates: ExchangeRates): boolean {
@@ -125,17 +134,27 @@ export class CurrencyStore {
     await this.storagePort.saveSelectedCurrencies(updated);
   }
 
+  async updateBlockCount(count: number): Promise<void> {
+    this.setBlockCountValue(count);
+    await this.storagePort.saveBlockCount(count);
+  }
+
   async initialize(): Promise<void> {
     this.setLoading(true);
 
-    const [cached, savedCurrencies] = await Promise.all([
+    const [cached, savedCurrencies, savedBlockCount] = await Promise.all([
       this.storagePort.loadRates(),
       this.storagePort.loadSelectedCurrencies(),
+      this.storagePort.loadBlockCount(),
     ]);
 
     if (savedCurrencies) {
       this.setSelectedCurrencies(savedCurrencies);
       this.setActiveCurrency(savedCurrencies[0]);
+    }
+
+    if (savedBlockCount) {
+      this.setBlockCountValue(savedBlockCount);
     }
 
     if (cached) {

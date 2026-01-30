@@ -4,6 +4,7 @@ import { StoragePort } from '../../core/ports/StoragePort';
 
 const RATES_KEY = 'exchange_rates';
 const SELECTED_CURRENCIES_KEY = 'selected_currencies';
+const BLOCK_COUNT_KEY = 'block_count';
 
 export class AsyncStorageAdapter implements StoragePort {
   async saveRates(rates: ExchangeRates): Promise<void> {
@@ -34,5 +35,16 @@ export class AsyncStorageAdapter implements StoragePort {
     } catch {
       return null;
     }
+  }
+
+  async saveBlockCount(count: number): Promise<void> {
+    await AsyncStorage.setItem(BLOCK_COUNT_KEY, String(count));
+  }
+
+  async loadBlockCount(): Promise<number | null> {
+    const data = await AsyncStorage.getItem(BLOCK_COUNT_KEY);
+    if (!data) return null;
+    const count = parseInt(data, 10);
+    return isNaN(count) ? null : count;
   }
 }

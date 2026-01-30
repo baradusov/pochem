@@ -5,4 +5,6 @@ export interface StoragePort {
   loadRates(): Promise<ExchangeRates | null>;
   saveSelectedCurrencies(currencies: CurrencyCode[]): Promise<void>;
   loadSelectedCurrencies(): Promise<CurrencyCode[] | null>;
+  saveBlockCount(count: number): Promise<void>;
+  loadBlockCount(): Promise<number | null>;
 }
