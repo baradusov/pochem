@@ -42,7 +42,7 @@ export const SettingsScreen = observer(function SettingsScreen({
         <View style={styles.row}>
           <Text style={styles.label}>Последнее обновление</Text>
           <Text style={styles.value}>
-            {store.rates?.updatedAt ? formatDate(store.rates.updatedAt) : '—'}
+            {store.rates ? formatDate(store.rates.lastFetchedAt ?? store.rates.updatedAt) : '—'}
           </Text>
         </View>
 
