@@ -53,7 +53,8 @@ export class CurrencyStore {
 
   private isCacheValid(rates: ExchangeRates): boolean {
     const today = new Date().toISOString().split('T')[0];
-    if (rates.updatedAt !== today) return false;
+    const cacheDate = rates.lastFetchedAt ?? rates.updatedAt;
+    if (cacheDate !== today) return false;
 
     const hasAllCurrencies = AVAILABLE_CURRENCIES.every(
       (currency) => currency in rates.rates

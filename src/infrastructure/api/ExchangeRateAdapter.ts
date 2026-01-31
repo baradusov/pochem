@@ -33,6 +33,7 @@ export class ExchangeRateAdapter implements ExchangeRatePort {
       base: 'EUR',
       rates,
       updatedAt: data.date,
+      lastFetchedAt: new Date().toISOString().split('T')[0],
     };
   }
 }
