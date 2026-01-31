@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Linking, Modal, FlatList } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, Linking, Modal, FlatList, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useCurrency } from '../hooks/useCurrency';
@@ -15,10 +15,32 @@ export const SettingsScreen = observer(function SettingsScreen({
 }: SettingsScreenProps) {
   const store = useCurrency();
   const [pickerVisible, setPickerVisible] = useState(false);
+  const spinValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (store.refreshing) {
+      spinValue.setValue(0);
+      Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      spinValue.stopAnimation();
+    }
+  }, [store.refreshing, spinValue]);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
+    return date.toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -34,20 +56,36 @@ export const SettingsScreen = observer(function SettingsScreen({
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={onClose} hitSlop={8}>
-          <Text style={styles.backButton}>← Назад</Text>
+          <Text style={styles.backButton}>← Back</Text>
         </Pressable>
       </View>
 
       <View style={styles.content}>
         <View style={styles.row}>
-          <Text style={styles.label}>Последнее обновление</Text>
-          <Text style={styles.value}>
-            {store.rates?.updatedAt ? formatDate(store.rates.updatedAt) : '—'}
-          </Text>
+          <Text style={styles.label}>Last updated</Text>
+          <View style={styles.valueWithAction}>
+            <Text style={styles.value}>
+              {store.rates ? formatDate(store.rates.lastFetchedAt ?? store.rates.updatedAt) : '—'}
+            </Text>
+            <Pressable
+              onPress={() => store.refreshRates()}
+              hitSlop={8}
+              disabled={store.refreshing}
+            >
+              <Animated.Text
+                style={[
+                  styles.refreshIcon,
+                  { transform: [{ rotate: spin }] },
+                ]}
+              >
+                ↻
+              </Animated.Text>
+            </Pressable>
+          </View>
         </View>
 
         <Pressable style={styles.row} onPress={() => setPickerVisible(true)}>
-          <Text style={styles.label}>Количество валют</Text>
+          <Text style={styles.label}>Number of currencies</Text>
           <Text style={styles.value}>{store.blockCount} ›</Text>
         </Pressable>
       </View>
@@ -61,7 +99,7 @@ export const SettingsScreen = observer(function SettingsScreen({
         <SafeAreaView style={styles.container} edges={['top']}>
           <View style={styles.header}>
             <Pressable onPress={() => setPickerVisible(false)} hitSlop={8}>
-              <Text style={styles.backButton}>← Назад</Text>
+              <Text style={styles.backButton}>← Back</Text>
             </Pressable>
           </View>
           <FlatList
@@ -85,7 +123,7 @@ export const SettingsScreen = observer(function SettingsScreen({
         style={styles.footer}
         onPress={() => Linking.openURL('https://baradusov.ru')}
       >
-        <Text style={styles.footerText}>Сделано Нурилем</Text>
+        <Text style={styles.footerText}>Made by Nuril</Text>
         <Text style={styles.footerLink}>baradusov.ru</Text>
       </Pressable>
     </SafeAreaView>
@@ -123,6 +161,15 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 17,
     color: '#999',
+  },
+  valueWithAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  refreshIcon: {
+    fontSize: 17,
+    color: '#007AFF',
   },
   footer: {
     position: 'absolute',

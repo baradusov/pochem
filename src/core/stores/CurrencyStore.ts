@@ -11,6 +11,7 @@ export class CurrencyStore {
   inputValue: string = '';
   baseAmountEUR: number = 0;
   loading = true;
+  refreshing = false;
 
   constructor(
     private exchangeRatePort: ExchangeRatePort,
@@ -25,6 +26,10 @@ export class CurrencyStore {
 
   private setLoading(loading: boolean): void {
     this.loading = loading;
+  }
+
+  private setRefreshing(refreshing: boolean): void {
+    this.refreshing = refreshing;
   }
 
   private setActiveCurrency(currency: CurrencyCode): void {
@@ -174,6 +179,20 @@ export class CurrencyStore {
       await this.storagePort.saveRates(fresh);
     } catch {
       this.setLoading(false);
+    }
+  }
+
+  async refreshRates(): Promise<void> {
+    if (this.refreshing) return;
+
+    this.setRefreshing(true);
+
+    try {
+      const fresh = await this.exchangeRatePort.fetchRates('EUR');
+      this.setRates(fresh);
+      await this.storagePort.saveRates(fresh);
+    } finally {
+      this.setRefreshing(false);
     }
   }
 }
