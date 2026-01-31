@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.baradusov.pochem"
+      "bundleIdentifier": "com.baradusov.pochem",
+      "buildNumber": "4"
     },
     "android": {
       "adaptiveIcon": {
