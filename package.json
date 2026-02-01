@@ -1,6 +1,13 @@
 {
   "name": "pochem",
   "version": "1.0.0",
+  "description": "Currency converter app",
+  "author": "Nuril Baradusov",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baradusov/pochem.git"
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -22,6 +29,5 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "typescript": "~5.9.2"
-  },
-  "private": true
+  }
 }
