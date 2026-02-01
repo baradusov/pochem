@@ -1,6 +1,6 @@
-# почём
+# почём (pochem)
 
-Currency converter
+Simple currency converter
 
 |                                             |                                             |
 |---------------------------------------------|---------------------------------------------|
@@ -76,4 +76,12 @@ npm run prebuild
 └─────────────────────────────────────────────────────────┘
 ```
 
-See [CLAUDE.md](./CLAUDE.md)
+See [CLAUDE.md](./CLAUDE.md) for architecture details.
+
+## Versioning
+
+This project uses [CalVer](https://calver.org/) (`YY.MM.patch`). See [CHANGELOG.md](./CHANGELOG.md) for release history.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).

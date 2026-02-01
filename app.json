@@ -2,7 +2,7 @@
   "expo": {
     "name": "почём",
     "slug": "pochem",
-    "version": "1.0.0",
+    "version": "25.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

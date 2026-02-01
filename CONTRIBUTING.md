@@ -46,6 +46,18 @@ Key principles:
 - Follow existing code style
 - Update documentation if needed
 
+## Versioning
+
+This project uses [CalVer](https://calver.org/): `YY.MM.patch`
+
+- `25.2.1` — first release of February 2025
+- `25.2.2` — second release of February
+- `25.3.1` — first release of March
+
+Version is set in `app.json` and `package.json`. Build number (`buildNumber` in `app.json`) increments independently for app store submissions.
+
+After changing version in `app.json`, run `npx expo prebuild --clean` to sync with native projects.
+
 ## Issues
 
 - Use GitHub Issues for bugs and feature requests
