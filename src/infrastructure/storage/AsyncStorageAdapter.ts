@@ -23,7 +23,10 @@ export class AsyncStorageAdapter implements StoragePort {
   }
 
   async saveSelectedCurrencies(currencies: CurrencyCode[]): Promise<void> {
-    await AsyncStorage.setItem(SELECTED_CURRENCIES_KEY, JSON.stringify(currencies));
+    await AsyncStorage.setItem(
+      SELECTED_CURRENCIES_KEY,
+      JSON.stringify(currencies)
+    );
   }
 
   async loadSelectedCurrencies(): Promise<CurrencyCode[] | null> {

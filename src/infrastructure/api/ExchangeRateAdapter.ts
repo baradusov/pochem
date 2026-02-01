@@ -1,7 +1,12 @@
-import { AVAILABLE_CURRENCIES, CurrencyCode, ExchangeRates } from '../../core/entities/Currency';
+import {
+  AVAILABLE_CURRENCIES,
+  CurrencyCode,
+  ExchangeRates,
+} from '../../core/entities/Currency';
 import { ExchangeRatePort } from '../../core/ports/ExchangeRatePort';
 
-const API_URL = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json';
+const API_URL =
+  'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json';
 
 interface ApiResponse {
   date: string;
@@ -18,7 +23,10 @@ export class ExchangeRateAdapter implements ExchangeRatePort {
 
     const data: ApiResponse = await response.json();
 
-    const rates: Record<CurrencyCode, number> = {} as Record<CurrencyCode, number>;
+    const rates: Record<CurrencyCode, number> = {} as Record<
+      CurrencyCode,
+      number
+    >;
 
     for (const currency of AVAILABLE_CURRENCIES) {
       const code = currency.toLowerCase();

@@ -58,7 +58,11 @@ export const CurrencyBlock = observer(function CurrencyBlock({
     const maxFontByWidth = availableWidth / (charCount * charWidthRatio);
     const maxFontByHeight = availableHeight * 0.7;
 
-    const optimalSize = Math.min(maxFontByWidth, maxFontByHeight, MAX_FONT_SIZE);
+    const optimalSize = Math.min(
+      maxFontByWidth,
+      maxFontByHeight,
+      MAX_FONT_SIZE
+    );
     const finalSize = Math.max(MIN_FONT_SIZE, Math.floor(optimalSize));
 
     setFontSize(finalSize);
@@ -99,7 +103,11 @@ export const CurrencyBlock = observer(function CurrencyBlock({
 
       <View style={styles.valueContainer}>
         <Text
-          style={[styles.valueText, { fontSize }, isHighlighted && styles.activeText]}
+          style={[
+            styles.valueText,
+            { fontSize },
+            isHighlighted && styles.activeText,
+          ]}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.3}

@@ -15,7 +15,10 @@ import {
   Pressable,
   Image,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { CurrencyCode } from '../core/entities/Currency';
 import { CurrencyBlock } from '../components/CurrencyBlock';
@@ -75,7 +78,13 @@ export const ConverterScreen = observer(function ConverterScreen() {
 
       scrollViewRef.current?.scrollTo({ y: scrollY, animated: true });
     }
-  }, [store.activeCurrency, store.visibleCurrencies, keyboardHeight, blockHeight, contentHeight]);
+  }, [
+    store.activeCurrency,
+    store.visibleCurrencies,
+    keyboardHeight,
+    blockHeight,
+    contentHeight,
+  ]);
 
   const handleCurrencyPress = (currency: CurrencyCode) => {
     store.selectCurrency(currency);
@@ -131,7 +140,9 @@ export const ConverterScreen = observer(function ConverterScreen() {
         onChangeText={handleChangeText}
         keyboardType="decimal-pad"
         selectionColor="#000"
-        inputAccessoryViewID={Platform.OS === 'ios' ? INPUT_ACCESSORY_ID : undefined}
+        inputAccessoryViewID={
+          Platform.OS === 'ios' ? INPUT_ACCESSORY_ID : undefined
+        }
       />
 
       <ScrollView
@@ -161,7 +172,9 @@ export const ConverterScreen = observer(function ConverterScreen() {
 
       <CurrencyPicker
         visible={pickerVisible}
-        currentCurrency={editingIndex !== null ? store.visibleCurrencies[editingIndex] : 'EUR'}
+        currentCurrency={
+          editingIndex !== null ? store.visibleCurrencies[editingIndex] : 'EUR'
+        }
         disabledCurrencies={store.selectedCurrencies}
         onSelect={handlePickerSelect}
         onClose={handlePickerClose}
@@ -179,7 +192,10 @@ export const ConverterScreen = observer(function ConverterScreen() {
       {Platform.OS === 'ios' && (
         <InputAccessoryView nativeID={INPUT_ACCESSORY_ID}>
           <View style={styles.accessoryContainer}>
-            <TouchableOpacity onPress={Keyboard.dismiss} style={styles.doneButton}>
+            <TouchableOpacity
+              onPress={Keyboard.dismiss}
+              style={styles.doneButton}
+            >
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -205,7 +221,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     borderColor: '#000',
     borderRadius: '50%',
-    borderWidth: 1
+    borderWidth: 1,
   },
   scrollView: {
     flex: 1,

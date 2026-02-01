@@ -6,7 +6,9 @@ export const CurrencyStoreContext = createContext<CurrencyStore | null>(null);
 export function useCurrency(): CurrencyStore {
   const store = useContext(CurrencyStoreContext);
   if (!store) {
-    throw new Error('useCurrency must be used within CurrencyStoreContext.Provider');
+    throw new Error(
+      'useCurrency must be used within CurrencyStoreContext.Provider'
+    );
   }
   return store;
 }

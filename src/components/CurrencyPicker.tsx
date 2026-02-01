@@ -25,7 +25,8 @@ export function CurrencyPicker({
   onClose,
 }: CurrencyPickerProps) {
   const renderItem = ({ item }: { item: CurrencyCode }) => {
-    const isDisabled = disabledCurrencies.includes(item) && item !== currentCurrency;
+    const isDisabled =
+      disabledCurrencies.includes(item) && item !== currentCurrency;
     const isCurrent = item === currentCurrency;
 
     return (

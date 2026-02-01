@@ -1,5 +1,10 @@
 import { makeAutoObservable } from 'mobx';
-import { AVAILABLE_CURRENCIES, CurrencyCode, DEFAULT_CURRENCIES, ExchangeRates } from '../entities/Currency';
+import {
+  AVAILABLE_CURRENCIES,
+  CurrencyCode,
+  DEFAULT_CURRENCIES,
+  ExchangeRates,
+} from '../entities/Currency';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
 
@@ -125,7 +130,10 @@ export class CurrencyStore {
     this.setBaseAmountEUR(this.toEUR(amount, this.activeCurrency));
   }
 
-  async replaceCurrency(index: number, newCurrency: CurrencyCode): Promise<void> {
+  async replaceCurrency(
+    index: number,
+    newCurrency: CurrencyCode
+  ): Promise<void> {
     const updated = [...this.selectedCurrencies];
     const oldCurrency = updated[index];
     updated[index] = newCurrency;

@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Linking, Modal, FlatList, Animated, Easing } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Linking,
+  Modal,
+  FlatList,
+  Animated,
+  Easing,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useCurrency } from '../hooks/useCurrency';
@@ -65,7 +75,9 @@ export const SettingsScreen = observer(function SettingsScreen({
           <Text style={styles.label}>Last updated</Text>
           <View style={styles.valueWithAction}>
             <Text style={styles.value}>
-              {store.rates ? formatDate(store.rates.lastFetchedAt ?? store.rates.updatedAt) : '—'}
+              {store.rates
+                ? formatDate(store.rates.lastFetchedAt ?? store.rates.updatedAt)
+                : '—'}
             </Text>
             <Pressable
               onPress={() => store.refreshRates()}
@@ -73,10 +85,7 @@ export const SettingsScreen = observer(function SettingsScreen({
               disabled={store.refreshing}
             >
               <Animated.Text
-                style={[
-                  styles.refreshIcon,
-                  { transform: [{ rotate: spin }] },
-                ]}
+                style={[styles.refreshIcon, { transform: [{ rotate: spin }] }]}
               >
                 ↻
               </Animated.Text>
@@ -107,10 +116,18 @@ export const SettingsScreen = observer(function SettingsScreen({
             keyExtractor={(item) => String(item)}
             renderItem={({ item }) => (
               <Pressable
-                style={[styles.optionRow, item === store.blockCount && styles.optionRowSelected]}
+                style={[
+                  styles.optionRow,
+                  item === store.blockCount && styles.optionRowSelected,
+                ]}
                 onPress={() => handleBlockCountSelect(item)}
               >
-                <Text style={[styles.optionText, item === store.blockCount && styles.optionTextSelected]}>
+                <Text
+                  style={[
+                    styles.optionText,
+                    item === store.blockCount && styles.optionTextSelected,
+                  ]}
+                >
                   {item}
                 </Text>
               </Pressable>
