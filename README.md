@@ -85,3 +85,7 @@ This project uses [CalVer](https://calver.org/) (`YY.MM.patch`). See [CHANGELOG.
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Releasing
+
+See [RELEASING.md](./RELEASING.md).
