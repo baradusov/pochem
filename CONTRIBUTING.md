@@ -33,12 +33,24 @@ Key principles:
 - **UI layer** only renders, no business logic
 - **Ports & Adapters** pattern for external dependencies
 
+## Tests
+
+```bash
+npm test           # run tests
+npm run test:watch # watch mode
+```
+
+Tests are in `src/**/*.test.ts`. We use [Vitest](https://vitest.dev/).
+
+When adding new functionality to `core/`, add tests.
+
 ## Pull Requests
 
 1. Fork the repo and create your branch from `main`
 2. Make your changes
-3. Test on iOS and/or Android
-4. Create a pull request
+3. Run `npm run check` (lint + typecheck + tests)
+4. Test on iOS and/or Android
+5. Create a pull request
 
 ### PR Guidelines
 

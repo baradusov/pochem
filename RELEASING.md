@@ -10,23 +10,28 @@
 
 3. Update `CHANGELOG.md` if new version
 
-4. Rebuild native project:
+4. Run checks:
+   ```bash
+   npm run check
+   ```
+
+5. Rebuild native project:
    ```bash
    npx expo prebuild --clean
    ```
 
-5. Open Xcode:
+6. Open Xcode:
    ```bash
    open ios/pochyom.xcworkspace
    ```
 
-6. Select "Any iOS Device (arm64)"
+7. Select "Any iOS Device (arm64)"
 
-7. **Product → Archive**
+8. **Product → Archive**
 
-8. After archive: **Distribute App → App Store Connect**
+9. After archive: **Distribute App → App Store Connect**
 
-9. Commit changes:
+10. Commit changes:
    ```bash
    git add -A && git commit -m "chore: release 25.X.X (build N)"
    ```
