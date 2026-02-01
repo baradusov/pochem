@@ -1,59 +1,74 @@
 # почём
 
-Конвертер валют
+Currency converter
 
-## Запуск
+## Getting Started
 
 ```bash
-# Установить зависимости
+# Install dependencies
 npm install
 
-# Запустить Expo
+# Start Expo
 npm start
 ```
 
-После запуска:
-- Нажми `i` для iOS симулятора
-- Нажми `a` для Android эмулятора
-- Отсканируй QR-код в Expo Go на телефоне
+After starting:
+- Press `i` for iOS simulator
+- Press `a` for Android emulator
+- Scan QR code with Expo Go on your phone
 
-## Нативная сборка
+## Native Build
 
 ```bash
-# iOS симулятор
+# iOS simulator
 npm run ios
 
-# iOS на реальном устройстве (dev)
+# iOS on real device (dev)
 npm run ios -- --device
 
-# iOS на реальном устройстве (release, работает без дев-сервера)
+# iOS on real device (release, works without dev server)
 npm run ios -- --configuration Release --device
 
 # Android
 npm run android
 ```
 
-Если нативные папки отсутствуют:
+If native folders are missing:
 ```bash
 npm run prebuild
 ```
 
-## Стек
+## Tech Stack
 
 - Expo 54
 - React Native 0.81
 - MobX
 - TypeScript
 
-## Архитектура
-
-См. [CLAUDE.md](./CLAUDE.md) — Clean Architecture с портами и адаптерами.
+## Architecture
 
 ```
-src/
-├── screens/        # Экраны
-├── components/     # UI компоненты
-├── core/           # Бизнес-логика (framework-agnostic)
-├── infrastructure/ # Адаптеры (API, storage)
-└── hooks/          # React хуки
+┌─────────────────────────────────────────────────────────┐
+│  UI Layer (screens/, components/)                       │
+│  - Screens and UI components                            │
+│  - Only renders, no business logic                      │
+│  - Calls store methods, observes state                  │
+├─────────────────────────────────────────────────────────┤
+│  Adapters (hooks/, controllers/)                        │
+│  - Thin adapters between UI framework and stores        │
+│  - useAuth(), useProfile(), etc.                        │
+├─────────────────────────────────────────────────────────┤
+│  Core (core/)                                           │
+│  - Business logic lives here                            │
+│  - Stores orchestrate everything                        │
+│  - MUST be framework-agnostic                           │
+│  - Could be extracted to CLI/API without changes        │
+├─────────────────────────────────────────────────────────┤
+│  Infrastructure (infrastructure/)                       │
+│  - Implements ports (interfaces) from core              │
+│  - Database adapters, external API adapters             │
+│  - Can be swapped without touching business logic       │
+└─────────────────────────────────────────────────────────┘
 ```
+
+See [CLAUDE.md](./CLAUDE.md)
