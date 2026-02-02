@@ -17,7 +17,7 @@
 
 5. Rebuild native project:
    ```bash
-   npx expo prebuild --clean
+   npm run prebuild -- --clean
    ```
 
 6. Open Xcode:

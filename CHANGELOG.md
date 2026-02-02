@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
+## [Unreleased]
+
+### Added
+
+- Conversion history (last 10 entries, persisted in AsyncStorage)
+- Tap history entry to restore currencies and amounts
+- History grouped by date in Settings screen
+
+### Changed
+
+- Settings screen now scrollable with Settings and History sections
+- Extracted utility functions to `core/utils/`
+
 ## [25.2.1] - 2025-02-01
 
 ### Added
