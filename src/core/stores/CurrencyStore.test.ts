@@ -79,6 +79,8 @@ const createMockPorts = () => {
     loadSelectedCurrencies: vi.fn().mockResolvedValue(null),
     saveBlockCount: vi.fn().mockResolvedValue(undefined),
     loadBlockCount: vi.fn().mockResolvedValue(null),
+    saveConversionHistory: vi.fn().mockResolvedValue(undefined),
+    loadConversionHistory: vi.fn().mockResolvedValue([]),
   };
 
   return { exchangeRatePort, storagePort };
@@ -170,6 +172,57 @@ describe('CurrencyStore', () => {
 
       expect(store.activeCurrency).toBe('USD');
       expect(store.inputValue).toBe('110,00');
+    });
+  });
+
+  describe('conversion history', () => {
+    beforeEach(async () => {
+      await store.initialize();
+    });
+
+    it('saves conversion to history', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('100');
+      await store.saveToHistory();
+
+      expect(store.conversionHistory).toHaveLength(1);
+      expect(store.conversionHistory[0].sourceCurrency).toBe('EUR');
+      expect(store.conversionHistory[0].sourceAmount).toBe(100);
+      expect(ports.storagePort.saveConversionHistory).toHaveBeenCalled();
+    });
+
+    it('does not save zero amounts', async () => {
+      store.updateInput('');
+      await store.saveToHistory();
+
+      expect(store.conversionHistory).toHaveLength(0);
+      expect(ports.storagePort.saveConversionHistory).not.toHaveBeenCalled();
+    });
+
+    it('keeps only last 10 entries', async () => {
+      store.selectCurrency('EUR');
+
+      for (let i = 0; i < 12; i++) {
+        store.updateInput(String(i + 1));
+        await store.saveToHistory();
+      }
+
+      expect(store.conversionHistory).toHaveLength(10);
+      expect(store.conversionHistory[0].sourceAmount).toBe(12);
+    });
+
+    it('restores from history entry', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('500');
+      await store.saveToHistory();
+
+      store.updateInput('');
+      store.selectCurrency('USD');
+
+      store.restoreFromHistory(store.conversionHistory[0]);
+
+      expect(store.activeCurrency).toBe('EUR');
+      expect(store.inputValue).toBe('500,00');
     });
   });
 });

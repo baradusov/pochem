@@ -54,6 +54,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
       () => {
         setKeyboardHeight(0);
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+        store.saveToHistory();
       }
     );
 
@@ -61,6 +62,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
       showSub.remove();
       hideSub.remove();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

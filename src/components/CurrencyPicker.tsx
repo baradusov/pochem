@@ -17,13 +17,13 @@ interface CurrencyPickerProps {
   onClose: () => void;
 }
 
-export function CurrencyPicker({
+export const CurrencyPicker = ({
   visible,
   currentCurrency,
   disabledCurrencies,
   onSelect,
   onClose,
-}: CurrencyPickerProps) {
+}: CurrencyPickerProps) => {
   const renderItem = ({ item }: { item: CurrencyCode }) => {
     const isDisabled =
       disabledCurrencies.includes(item) && item !== currentCurrency;
@@ -80,7 +80,7 @@ export function CurrencyPicker({
       </View>
     </Modal>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

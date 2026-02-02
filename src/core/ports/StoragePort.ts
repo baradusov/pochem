@@ -1,3 +1,4 @@
+import { ConversionHistoryEntry } from '../entities/ConversionHistory';
 import { CurrencyCode, ExchangeRates } from '../entities/Currency';
 
 export interface StoragePort {
@@ -7,4 +8,6 @@ export interface StoragePort {
   loadSelectedCurrencies(): Promise<CurrencyCode[] | null>;
   saveBlockCount(count: number): Promise<void>;
   loadBlockCount(): Promise<number | null>;
+  saveConversionHistory(entries: ConversionHistoryEntry[]): Promise<void>;
+  loadConversionHistory(): Promise<ConversionHistoryEntry[]>;
 }

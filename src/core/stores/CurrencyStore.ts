@@ -1,5 +1,9 @@
 import { makeAutoObservable } from 'mobx';
 import {
+  ConversionHistoryEntry,
+  MAX_HISTORY_ENTRIES,
+} from '../entities/ConversionHistory';
+import {
   AVAILABLE_CURRENCIES,
   CurrencyCode,
   DEFAULT_CURRENCIES,
@@ -7,6 +11,7 @@ import {
 } from '../entities/Currency';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
+import { formatNumber } from '../utils/format';
 
 export class CurrencyStore {
   rates: ExchangeRates | null = null;
@@ -17,6 +22,7 @@ export class CurrencyStore {
   baseAmountEUR: number = 0;
   loading = true;
   refreshing = false;
+  conversionHistory: ConversionHistoryEntry[] = [];
 
   constructor(
     private exchangeRatePort: ExchangeRatePort,
@@ -55,6 +61,10 @@ export class CurrencyStore {
 
   private setBlockCountValue(count: number): void {
     this.blockCount = count;
+  }
+
+  private setConversionHistory(entries: ConversionHistoryEntry[]): void {
+    this.conversionHistory = entries;
   }
 
   get visibleCurrencies(): CurrencyCode[] {
@@ -104,14 +114,7 @@ export class CurrencyStore {
     const amount = this.getAmount(currency);
     if (amount === 0 && this.inputValue === '') return '';
 
-    return this.formatNumber(amount);
-  }
-
-  private formatNumber(num: number): string {
-    const fixed = num.toFixed(2);
-    const [intPart, decPart] = fixed.split('.');
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${formattedInt},${decPart}`;
+    return formatNumber(amount);
   }
 
   selectCurrency(currency: CurrencyCode): void {
@@ -119,7 +122,7 @@ export class CurrencyStore {
 
     const newAmount = this.getAmount(currency);
     this.setActiveCurrency(currency);
-    this.setInputValue(newAmount > 0 ? this.formatNumber(newAmount) : '');
+    this.setInputValue(newAmount > 0 ? formatNumber(newAmount) : '');
   }
 
   updateInput(value: string): void {
@@ -156,11 +159,15 @@ export class CurrencyStore {
   async initialize(): Promise<void> {
     this.setLoading(true);
 
-    const [cached, savedCurrencies, savedBlockCount] = await Promise.all([
-      this.storagePort.loadRates(),
-      this.storagePort.loadSelectedCurrencies(),
-      this.storagePort.loadBlockCount(),
-    ]);
+    const [cached, savedCurrencies, savedBlockCount, savedHistory] =
+      await Promise.all([
+        this.storagePort.loadRates(),
+        this.storagePort.loadSelectedCurrencies(),
+        this.storagePort.loadBlockCount(),
+        this.storagePort.loadConversionHistory(),
+      ]);
+
+    this.setConversionHistory(savedHistory);
 
     if (savedCurrencies) {
       this.setSelectedCurrencies(savedCurrencies);
@@ -202,5 +209,46 @@ export class CurrencyStore {
     } finally {
       this.setRefreshing(false);
     }
+  }
+
+  async saveToHistory(): Promise<void> {
+    const sourceAmount = this.parseInput(this.inputValue);
+    if (sourceAmount === 0) return;
+
+    const amounts: Record<CurrencyCode, number> = {} as Record<
+      CurrencyCode,
+      number
+    >;
+
+    for (const currency of this.visibleCurrencies) {
+      amounts[currency] = this.getAmount(currency);
+    }
+
+    const entry: ConversionHistoryEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      sourceCurrency: this.activeCurrency,
+      sourceAmount,
+      currencies: [...this.visibleCurrencies],
+      amounts,
+    };
+
+    const updated = [entry, ...this.conversionHistory].slice(
+      0,
+      MAX_HISTORY_ENTRIES
+    );
+    this.setConversionHistory(updated);
+    await this.storagePort.saveConversionHistory(updated);
+  }
+
+  restoreFromHistory(entry: ConversionHistoryEntry): void {
+    this.setSelectedCurrencies(entry.currencies);
+    this.setActiveCurrency(entry.sourceCurrency);
+
+    const formattedAmount = formatNumber(entry.sourceAmount);
+    this.setInputValue(formattedAmount);
+    this.setBaseAmountEUR(this.toEUR(entry.sourceAmount, entry.sourceCurrency));
+
+    this.storagePort.saveSelectedCurrencies(entry.currencies);
   }
 }

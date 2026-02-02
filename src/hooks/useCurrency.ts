@@ -3,7 +3,7 @@ import { CurrencyStore } from '../core/stores/CurrencyStore';
 
 export const CurrencyStoreContext = createContext<CurrencyStore | null>(null);
 
-export function useCurrency(): CurrencyStore {
+export const useCurrency = (): CurrencyStore => {
   const store = useContext(CurrencyStoreContext);
   if (!store) {
     throw new Error(
@@ -11,4 +11,4 @@ export function useCurrency(): CurrencyStore {
     );
   }
   return store;
-}
+};

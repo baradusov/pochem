@@ -9,9 +9,13 @@ import {
   FlatList,
   Animated,
   Easing,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
+import { ConversionHistoryEntry } from '../core/entities/ConversionHistory';
+import { formatDate, formatNumber } from '../core/utils/format';
+import { groupHistoryByDate } from '../core/utils/group';
 import { useCurrency } from '../hooks/useCurrency';
 
 interface SettingsScreenProps {
@@ -19,6 +23,37 @@ interface SettingsScreenProps {
 }
 
 const BLOCK_COUNT_OPTIONS = [2, 3, 4];
+
+interface HistoryEntryViewProps {
+  entry: ConversionHistoryEntry;
+  onPress: () => void;
+}
+
+const HistoryEntryView = ({ entry, onPress }: HistoryEntryViewProps) => {
+  const otherCurrencies = entry.currencies.filter(
+    (c) => c !== entry.sourceCurrency
+  );
+
+  return (
+    <Pressable style={styles.historyEntry} onPress={onPress}>
+      <Text style={styles.sourceCurrencyLabel}>{entry.sourceCurrency}</Text>
+      <Text style={styles.sourceAmount}>
+        {formatNumber(entry.sourceAmount)}
+      </Text>
+
+      <View style={styles.otherCurrenciesRow}>
+        {otherCurrencies.map((currency) => (
+          <View key={currency} style={styles.otherCurrencyItem}>
+            <Text style={styles.otherCurrencyLabel}>{currency}</Text>
+            <Text style={styles.otherCurrencyAmount}>
+              {formatNumber(entry.amounts[currency])}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Pressable>
+  );
+};
 
 export const SettingsScreen = observer(function SettingsScreen({
   onClose,
@@ -48,19 +83,17 @@ export const SettingsScreen = observer(function SettingsScreen({
     outputRange: ['0deg', '360deg'],
   });
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  };
-
   const handleBlockCountSelect = (count: number) => {
     store.updateBlockCount(count);
     setPickerVisible(false);
   };
+
+  const handleHistoryPress = (entry: ConversionHistoryEntry) => {
+    store.restoreFromHistory(entry);
+    onClose();
+  };
+
+  const groupedHistory = groupHistoryByDate(store.conversionHistory);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -70,34 +103,72 @@ export const SettingsScreen = observer(function SettingsScreen({
         </Pressable>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Last updated</Text>
-          <View style={styles.valueWithAction}>
-            <Text style={styles.value}>
-              {store.rates
-                ? formatDate(store.rates.lastFetchedAt ?? store.rates.updatedAt)
-                : '—'}
-            </Text>
-            <Pressable
-              onPress={() => store.refreshRates()}
-              hitSlop={8}
-              disabled={store.refreshing}
-            >
-              <Animated.Text
-                style={[styles.refreshIcon, { transform: [{ rotate: spin }] }]}
+      <ScrollView style={styles.scrollView} bounces={false}>
+        <Text style={styles.sectionTitle}>Settings</Text>
+
+        <View style={styles.settingsContent}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Last updated</Text>
+            <View style={styles.valueWithAction}>
+              <Text style={styles.value}>
+                {store.rates
+                  ? formatDate(
+                      store.rates.lastFetchedAt ?? store.rates.updatedAt
+                    )
+                  : '—'}
+              </Text>
+              <Pressable
+                onPress={() => store.refreshRates()}
+                hitSlop={8}
+                disabled={store.refreshing}
               >
-                ↻
-              </Animated.Text>
-            </Pressable>
+                <Animated.Text
+                  style={[
+                    styles.refreshIcon,
+                    { transform: [{ rotate: spin }] },
+                  ]}
+                >
+                  ↻
+                </Animated.Text>
+              </Pressable>
+            </View>
           </View>
+
+          <Pressable style={styles.row} onPress={() => setPickerVisible(true)}>
+            <Text style={styles.label}>Number of currencies</Text>
+            <Text style={styles.value}>{store.blockCount} ›</Text>
+          </Pressable>
         </View>
 
-        <Pressable style={styles.row} onPress={() => setPickerVisible(true)}>
-          <Text style={styles.label}>Number of currencies</Text>
-          <Text style={styles.value}>{store.blockCount} ›</Text>
+        {store.conversionHistory.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>History</Text>
+
+            {groupedHistory.map((group) => (
+              <View key={group.date}>
+                <Text style={styles.dateHeader}>{formatDate(group.date)}</Text>
+                {group.entries.map((entry) => (
+                  <HistoryEntryView
+                    key={entry.id}
+                    entry={entry}
+                    onPress={() => handleHistoryPress(entry)}
+                  />
+                ))}
+              </View>
+            ))}
+          </>
+        )}
+
+        <View style={styles.footerSpacer} />
+
+        <Pressable
+          style={styles.footer}
+          onPress={() => Linking.openURL('https://baradusov.ru')}
+        >
+          <Text style={styles.footerText}>Made by Nuril</Text>
+          <Text style={styles.footerLink}>baradusov.ru</Text>
         </Pressable>
-      </View>
+      </ScrollView>
 
       <Modal
         visible={pickerVisible}
@@ -111,6 +182,7 @@ export const SettingsScreen = observer(function SettingsScreen({
               <Text style={styles.backButton}>← Back</Text>
             </Pressable>
           </View>
+
           <FlatList
             data={BLOCK_COUNT_OPTIONS}
             keyExtractor={(item) => String(item)}
@@ -135,14 +207,6 @@ export const SettingsScreen = observer(function SettingsScreen({
           />
         </SafeAreaView>
       </Modal>
-
-      <Pressable
-        style={styles.footer}
-        onPress={() => Linking.openURL('https://baradusov.ru')}
-      >
-        <Text style={styles.footerText}>Made by Nuril</Text>
-        <Text style={styles.footerLink}>baradusov.ru</Text>
-      </Pressable>
     </SafeAreaView>
   );
 });
@@ -162,8 +226,18 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
   },
-  content: {
-    padding: 16,
+  scrollView: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 8,
+  },
+  settingsContent: {
+    paddingHorizontal: 16,
   },
   row: {
     flexDirection: 'row',
@@ -188,11 +262,52 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
   },
+  dateHeader: {
+    fontSize: 14,
+    color: '#666',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  historyEntry: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  sourceCurrencyLabel: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  sourceAmount: {
+    fontSize: 40,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  otherCurrenciesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    rowGap: 8,
+  },
+  otherCurrencyItem: {
+    flexDirection: 'column',
+  },
+  otherCurrencyLabel: {
+    fontSize: 12,
+    color: '#666',
+    textTransform: 'uppercase',
+  },
+  otherCurrencyAmount: {
+    fontSize: 15,
+    color: '#000',
+  },
+  footerSpacer: {
+    height: 20,
+  },
   footer: {
-    position: 'absolute',
-    bottom: 48,
-    left: 0,
-    right: 0,
+    padding: 32,
     alignItems: 'center',
   },
   footerText: {

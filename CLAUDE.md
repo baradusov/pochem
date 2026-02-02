@@ -62,7 +62,8 @@ src/
 ├── core/                     # Business logic (framework-agnostic)
 │   ├── entities/            # Domain models
 │   ├── stores/              # State management stores
-│   └── ports/               # Interfaces (contracts)
+│   ├── ports/               # Interfaces (contracts)
+│   └── utils/               # Pure utility functions
 ├── infrastructure/          # External service adapters
 │   ├── database/           # Database implementation
 │   └── api/                # External API adapters
@@ -141,3 +142,4 @@ class DatabaseAuthAdapter implements AuthPort {
 - Prefer composition over inheritance
 - Small, focused functions
 - Descriptive names over comments
+- Arrow functions everywhere (except class methods)
