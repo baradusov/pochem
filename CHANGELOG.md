@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
-## [Unreleased]
+## [25.2.2] - 2025-02-03
 
 ### Added
 
