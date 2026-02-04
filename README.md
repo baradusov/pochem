@@ -82,6 +82,10 @@ See [CLAUDE.md](./CLAUDE.md) for architecture details.
 
 This project uses [CalVer](https://calver.org/) (`YY.MM.patch`). See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
