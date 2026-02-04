@@ -2,9 +2,9 @@
 
 Simple currency converter
 
-|                                             |                                             |
-|---------------------------------------------|---------------------------------------------|
-| <img src="docs/screen-1.png" width="200" /> | <img src="docs/screen-2.png" width="200" /> |
+|                                             |                                             |                                             |
+|---------------------------------------------|---------------------------------------------|---------------------------------------------|
+| <img src="docs/screen-1.png" width="200" /> | <img src="docs/screen-2.png" width="200" /> | <img src="docs/screen-3.png" width="200" /> |
 
 
 ## Getting Started
