@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CurrencyStore } from './CurrencyStore';
+import { ClipboardPort } from '../ports/ClipboardPort';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
 import { ExchangeRates } from '../entities/Currency';
@@ -83,7 +84,11 @@ const createMockPorts = () => {
     loadConversionHistory: vi.fn().mockResolvedValue([]),
   };
 
-  return { exchangeRatePort, storagePort };
+  const clipboardPort: ClipboardPort = {
+    copy: vi.fn().mockResolvedValue(undefined),
+  };
+
+  return { exchangeRatePort, storagePort, clipboardPort };
 };
 
 describe('CurrencyStore', () => {
@@ -92,7 +97,11 @@ describe('CurrencyStore', () => {
 
   beforeEach(() => {
     ports = createMockPorts();
-    store = new CurrencyStore(ports.exchangeRatePort, ports.storagePort);
+    store = new CurrencyStore(
+      ports.exchangeRatePort,
+      ports.storagePort,
+      ports.clipboardPort
+    );
   });
 
   describe('initialization', () => {
@@ -172,6 +181,39 @@ describe('CurrencyStore', () => {
 
       expect(store.activeCurrency).toBe('USD');
       expect(store.inputValue).toBe('110,00');
+    });
+  });
+
+  describe('copyAmount', () => {
+    beforeEach(async () => {
+      await store.initialize();
+    });
+
+    it('copies formatted amount without spaces', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('1000');
+
+      await store.copyAmount('RUB');
+
+      expect(ports.clipboardPort.copy).toHaveBeenCalledWith('100000,00');
+    });
+
+    it('copies active currency input value without spaces', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('1 000');
+
+      await store.copyAmount('EUR');
+
+      expect(ports.clipboardPort.copy).toHaveBeenCalledWith('1000');
+    });
+
+    it('does not copy empty value', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('');
+
+      await store.copyAmount('USD');
+
+      expect(ports.clipboardPort.copy).not.toHaveBeenCalled();
     });
   });
 

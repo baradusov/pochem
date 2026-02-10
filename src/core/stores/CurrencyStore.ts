@@ -9,6 +9,7 @@ import {
   DEFAULT_CURRENCIES,
   ExchangeRates,
 } from '../entities/Currency';
+import { ClipboardPort } from '../ports/ClipboardPort';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
 import { formatNumber } from '../utils/format';
@@ -26,7 +27,8 @@ export class CurrencyStore {
 
   constructor(
     private exchangeRatePort: ExchangeRatePort,
-    private storagePort: StoragePort
+    private storagePort: StoragePort,
+    private clipboardPort: ClipboardPort
   ) {
     makeAutoObservable(this);
   }
@@ -115,6 +117,12 @@ export class CurrencyStore {
     if (amount === 0 && this.inputValue === '') return '';
 
     return formatNumber(amount);
+  }
+
+  async copyAmount(currency: CurrencyCode): Promise<void> {
+    const formatted = this.formatAmount(currency);
+    if (!formatted) return;
+    await this.clipboardPort.copy(formatted.replace(/\s/g, ''));
   }
 
   selectCurrency(currency: CurrencyCode): void {

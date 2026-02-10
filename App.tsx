@@ -5,11 +5,17 @@ import { CurrencyStoreContext } from './src/hooks/useCurrency';
 import { CurrencyStore } from './src/core/stores/CurrencyStore';
 import { ExchangeRateAdapter } from './src/infrastructure/api/ExchangeRateAdapter';
 import { AsyncStorageAdapter } from './src/infrastructure/storage/AsyncStorageAdapter';
+import { ExpoClipboardAdapter } from './src/infrastructure/clipboard/ExpoClipboardAdapter';
 import { ConverterScreen } from './src/screens/ConverterScreen';
 
 const exchangeRateAdapter = new ExchangeRateAdapter();
 const storageAdapter = new AsyncStorageAdapter();
-const currencyStore = new CurrencyStore(exchangeRateAdapter, storageAdapter);
+const clipboardAdapter = new ExpoClipboardAdapter();
+const currencyStore = new CurrencyStore(
+  exchangeRateAdapter,
+  storageAdapter,
+  clipboardAdapter
+);
 
 export default function App() {
   const [ready, setReady] = useState(false);

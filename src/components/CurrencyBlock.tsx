@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   Pressable,
   StyleSheet,
   LayoutChangeEvent,
+  Animated,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { observer } from 'mobx-react-lite';
 import { CurrencyCode } from '../core/entities/Currency';
 import { useCurrency } from '../hooks/useCurrency';
@@ -77,6 +79,34 @@ export const CurrencyBlock = observer(function CurrencyBlock({
   };
 
   const showClear = isActive && isKeyboardVisible && displayValue !== '';
+  const showCopy = displayValue !== '' && displayValue !== '0';
+
+  const copyScale = useRef(new Animated.Value(1)).current;
+  const clearScale = useRef(new Animated.Value(1)).current;
+
+  const animatePress = (scale: Animated.Value, onDone: () => void) => {
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 0.6,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onDone();
+  };
+
+  const handleCopy = () => {
+    animatePress(copyScale, () => store.copyAmount(currency));
+  };
+
+  const handleAnimatedClear = () => {
+    animatePress(clearScale, handleClear);
+  };
 
   return (
     <Pressable
@@ -93,13 +123,22 @@ export const CurrencyBlock = observer(function CurrencyBlock({
         </Pressable>
       </View>
 
-      {showClear && (
-        <View style={styles.clearContainer}>
-          <Pressable onPress={handleClear} hitSlop={8}>
-            <Text style={styles.clearIcon}>×</Text>
+      <View style={styles.actionsContainer}>
+        {showCopy && (
+          <Pressable onPress={handleCopy} hitSlop={8}>
+            <Animated.View style={{ transform: [{ scale: copyScale }] }}>
+              <Feather name="copy" size={18} color="#999" />
+            </Animated.View>
           </Pressable>
-        </View>
-      )}
+        )}
+        {showClear && (
+          <Pressable onPress={handleAnimatedClear} hitSlop={8}>
+            <Animated.View style={{ transform: [{ scale: clearScale }] }}>
+              <Feather name="x" size={20} color="#999" />
+            </Animated.View>
+          </Pressable>
+        )}
+      </View>
 
       <View style={styles.valueContainer}>
         <Text
@@ -144,14 +183,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '200',
   },
-  clearContainer: {
+  actionsContainer: {
     position: 'absolute',
     bottom: 12,
     right: 16,
-  },
-  clearIcon: {
-    fontSize: 26,
-    color: '#999',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   valueContainer: {
     flex: 1,
