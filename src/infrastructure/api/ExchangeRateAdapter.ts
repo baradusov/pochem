@@ -5,8 +5,7 @@ import {
 } from '../../core/entities/Currency';
 import { ExchangeRatePort } from '../../core/ports/ExchangeRatePort';
 
-const API_URL =
-  'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json';
+const API_URL = 'https://latest.currency-api.pages.dev/v1/currencies/eur.json';
 
 interface ApiResponse {
   date: string;

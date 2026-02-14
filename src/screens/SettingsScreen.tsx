@@ -111,11 +111,7 @@ export const SettingsScreen = observer(function SettingsScreen({
             <Text style={styles.label}>Last updated</Text>
             <View style={styles.valueWithAction}>
               <Text style={styles.value}>
-                {store.rates
-                  ? formatDate(
-                      store.rates.lastFetchedAt ?? store.rates.updatedAt
-                    )
-                  : '—'}
+                {store.rates ? formatDate(store.rates.updatedAt) : '—'}
               </Text>
               <Pressable
                 onPress={() => store.refreshRates()}

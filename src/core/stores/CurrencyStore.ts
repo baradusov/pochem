@@ -75,8 +75,8 @@ export class CurrencyStore {
 
   private isCacheValid(rates: ExchangeRates): boolean {
     const today = new Date().toISOString().split('T')[0];
-    const cacheDate = rates.lastFetchedAt ?? rates.updatedAt;
-    if (cacheDate !== today) return false;
+    if (rates.lastFetchedAt !== today) return false;
+    if (rates.updatedAt < rates.lastFetchedAt) return false;
 
     const hasAllCurrencies = AVAILABLE_CURRENCIES.every(
       (currency) => currency in rates.rates
@@ -203,6 +203,13 @@ export class CurrencyStore {
     } catch {
       this.setLoading(false);
     }
+  }
+
+  async refreshIfStale(): Promise<void> {
+    if (this.refreshing) return;
+    if (this.rates && this.isCacheValid(this.rates)) return;
+
+    await this.refreshRates();
   }
 
   async refreshRates(): Promise<void> {

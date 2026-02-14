@@ -121,6 +121,53 @@ describe('CurrencyStore', () => {
     });
   });
 
+  describe('refreshIfStale', () => {
+    it('does not refresh when cache is valid', async () => {
+      await store.initialize();
+
+      await store.refreshIfStale();
+
+      expect(ports.exchangeRatePort.fetchRates).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes when lastFetchedAt is not today', async () => {
+      const staleRates: ExchangeRates = {
+        ...mockRates,
+        lastFetchedAt: '2020-01-01',
+      };
+      vi.mocked(ports.storagePort.loadRates).mockResolvedValue(staleRates);
+      vi.mocked(ports.exchangeRatePort.fetchRates).mockResolvedValue(
+        staleRates
+      );
+
+      await store.initialize();
+      vi.mocked(ports.exchangeRatePort.fetchRates).mockClear();
+
+      await store.refreshIfStale();
+
+      expect(ports.exchangeRatePort.fetchRates).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes when updatedAt is behind lastFetchedAt (stale CDN data)', async () => {
+      const staleCdnRates: ExchangeRates = {
+        ...mockRates,
+        updatedAt: '2020-01-01',
+        lastFetchedAt: today,
+      };
+      vi.mocked(ports.storagePort.loadRates).mockResolvedValue(staleCdnRates);
+      vi.mocked(ports.exchangeRatePort.fetchRates).mockResolvedValue(
+        staleCdnRates
+      );
+
+      await store.initialize();
+      vi.mocked(ports.exchangeRatePort.fetchRates).mockClear();
+
+      await store.refreshIfStale();
+
+      expect(ports.exchangeRatePort.fetchRates).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('currency conversion', () => {
     beforeEach(async () => {
       await store.initialize();

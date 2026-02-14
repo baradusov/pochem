@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { AppState, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CurrencyStoreContext } from './src/hooks/useCurrency';
 import { CurrencyStore } from './src/core/stores/CurrencyStore';
@@ -22,6 +22,16 @@ export default function App() {
 
   useEffect(() => {
     currencyStore.initialize().finally(() => setReady(true));
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        currencyStore.refreshIfStale();
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   if (!ready) {
