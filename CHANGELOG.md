@@ -6,6 +6,14 @@ This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
 **Note:** Versions 25.x were released in 2026 with an incorrect year prefix. Starting from 26.2.3, the correct year is used.
 
+## [26.2.5] - 2026-02-22
+
+### Added
+
+- Calculator keyboard with arithmetic operations (+, −, ×, ÷)
+- Haptic feedback on key presses
+- Long press on backspace to clear all input
+
 ## [26.2.4] - 2026-02-14
 
 ### Fixed

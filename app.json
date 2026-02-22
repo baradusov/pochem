@@ -2,7 +2,7 @@
   "expo": {
     "name": "почём",
     "slug": "pochem",
-    "version": "26.2.4",
+    "version": "26.2.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.baradusov.pochem",
-      "buildNumber": "13"
+      "buildNumber": "14"
     },
     "android": {
       "adaptiveIcon": {
