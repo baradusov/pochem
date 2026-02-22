@@ -264,6 +264,200 @@ describe('CurrencyStore', () => {
     });
   });
 
+  describe('appendDigit', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('appends digit to input', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+      store.appendDigit('3');
+
+      expect(store.inputValue).toBe('123');
+    });
+
+    it('recalculates conversion after appending', () => {
+      store.appendDigit('1');
+      store.appendDigit('0');
+      store.appendDigit('0');
+
+      expect(store.getAmount('USD')).toBeCloseTo(110);
+    });
+  });
+
+  describe('appendOperator', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('appends operator after a number', () => {
+      store.appendDigit('5');
+      store.appendOperator('+');
+
+      expect(store.inputValue).toBe('5+');
+    });
+
+    it('ignores operator on empty input', () => {
+      store.appendOperator('+');
+
+      expect(store.inputValue).toBe('');
+    });
+
+    it('replaces previous operator', () => {
+      store.appendDigit('5');
+      store.appendOperator('+');
+      store.appendOperator('-');
+
+      expect(store.inputValue).toBe('5-');
+    });
+
+    it('ignores operator after decimal separator', () => {
+      store.appendDigit('5');
+      store.appendDecimal();
+      store.appendOperator('+');
+
+      expect(store.inputValue).toBe('5,');
+    });
+  });
+
+  describe('appendDecimal', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('appends decimal separator', () => {
+      store.appendDigit('5');
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('5,');
+    });
+
+    it('prepends 0 when input is empty', () => {
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('0,');
+    });
+
+    it('prepends 0 after operator', () => {
+      store.appendDigit('5');
+      store.appendOperator('+');
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('5+0,');
+    });
+
+    it('does not add second decimal to same number', () => {
+      store.appendDigit('5');
+      store.appendDecimal();
+      store.appendDigit('3');
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('5,3');
+    });
+
+    it('allows decimal in new number after operator', () => {
+      store.appendDigit('5');
+      store.appendDecimal();
+      store.appendDigit('3');
+      store.appendOperator('+');
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('5,3+0,');
+    });
+  });
+
+  describe('backspace', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('removes last character', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+      store.appendDigit('3');
+      store.backspace();
+
+      expect(store.inputValue).toBe('12');
+    });
+
+    it('does nothing on empty input', () => {
+      store.backspace();
+
+      expect(store.inputValue).toBe('');
+    });
+
+    it('recalculates after backspace', () => {
+      store.appendDigit('1');
+      store.appendDigit('0');
+      store.appendDigit('0');
+      store.backspace();
+
+      expect(store.getAmount('USD')).toBeCloseTo(11);
+    });
+  });
+
+  describe('clearInput', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('clears all input', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+      store.appendDigit('3');
+      store.clearInput();
+
+      expect(store.inputValue).toBe('');
+      expect(store.getAmount('USD')).toBe(0);
+    });
+  });
+
+  describe('evaluate', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('evaluates expression and replaces input with result', () => {
+      store.updateInput('10+5');
+      store.evaluate();
+
+      expect(store.inputValue).toBe('15,00');
+    });
+
+    it('respects operator precedence', () => {
+      store.updateInput('2+3*4');
+      store.evaluate();
+
+      expect(store.inputValue).toBe('14,00');
+    });
+
+    it('clears input when result is 0', () => {
+      store.updateInput('5-5');
+      store.evaluate();
+
+      expect(store.inputValue).toBe('');
+    });
+
+    it('does nothing on empty input', () => {
+      store.evaluate();
+
+      expect(store.inputValue).toBe('');
+    });
+
+    it('converts expression with operators to other currencies', () => {
+      store.updateInput('100+50');
+
+      expect(store.getAmount('USD')).toBeCloseTo(165);
+    });
+  });
+
   describe('conversion history', () => {
     beforeEach(async () => {
       await store.initialize();

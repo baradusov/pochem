@@ -17,7 +17,6 @@ interface CurrencyBlockProps {
   isLast: boolean;
   onPress: (currency: CurrencyCode) => void;
   onCurrencyCodePress: () => void;
-  onClear: () => void;
   isKeyboardVisible: boolean;
 }
 
@@ -30,7 +29,6 @@ export const CurrencyBlock = observer(function CurrencyBlock({
   isLast,
   onPress,
   onCurrencyCodePress,
-  onClear,
   isKeyboardVisible,
 }: CurrencyBlockProps) {
   const store = useCurrency();
@@ -74,38 +72,24 @@ export const CurrencyBlock = observer(function CurrencyBlock({
     onPress(currency);
   };
 
-  const handleClear = () => {
-    onClear();
-  };
-
-  const showClear = isActive && isKeyboardVisible && displayValue !== '';
   const showCopy = displayValue !== '' && displayValue !== '0';
 
   const copyScale = useRef(new Animated.Value(1)).current;
-  const clearScale = useRef(new Animated.Value(1)).current;
 
-  const animatePress = (scale: Animated.Value, onDone: () => void) => {
+  const handleCopy = () => {
     Animated.sequence([
-      Animated.timing(scale, {
+      Animated.timing(copyScale, {
         toValue: 0.6,
         duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(scale, {
+      Animated.timing(copyScale, {
         toValue: 1,
         duration: 100,
         useNativeDriver: true,
       }),
     ]).start();
-    onDone();
-  };
-
-  const handleCopy = () => {
-    animatePress(copyScale, () => store.copyAmount(currency));
-  };
-
-  const handleAnimatedClear = () => {
-    animatePress(clearScale, handleClear);
+    store.copyAmount(currency);
   };
 
   return (
@@ -128,13 +112,6 @@ export const CurrencyBlock = observer(function CurrencyBlock({
           <Pressable onPress={handleCopy} hitSlop={8}>
             <Animated.View style={{ transform: [{ scale: copyScale }] }}>
               <Feather name="copy" size={18} color="#999" />
-            </Animated.View>
-          </Pressable>
-        )}
-        {showClear && (
-          <Pressable onPress={handleAnimatedClear} hitSlop={8}>
-            <Animated.View style={{ transform: [{ scale: clearScale }] }}>
-              <Feather name="x" size={20} color="#999" />
             </Animated.View>
           </Pressable>
         )}

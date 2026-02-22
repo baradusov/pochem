@@ -3,12 +3,6 @@ import {
   View,
   StyleSheet,
   StatusBar,
-  InputAccessoryView,
-  TouchableOpacity,
-  Text,
-  TextInput,
-  Keyboard,
-  Platform,
   ScrollView,
   useWindowDimensions,
   Modal,
@@ -23,17 +17,16 @@ import { observer } from 'mobx-react-lite';
 import { CurrencyCode } from '../core/entities/Currency';
 import { CurrencyBlock } from '../components/CurrencyBlock';
 import { CurrencyPicker } from '../components/CurrencyPicker';
+import { CalculatorKeyboard } from '../components/CalculatorKeyboard';
 import { SettingsScreen } from './SettingsScreen';
 import { useCurrency } from '../hooks/useCurrency';
 
-const INPUT_ACCESSORY_ID = 'currencyInputAccessory';
-
 export const ConverterScreen = observer(function ConverterScreen() {
   const store = useCurrency();
-  const inputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -43,30 +36,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
   const blockHeight = contentHeight / store.visibleCurrencies.length;
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-      }
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setKeyboardHeight(0);
-        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-        store.saveToHistory();
-      }
-    );
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (keyboardHeight > 0) {
+    if (keyboardVisible && keyboardHeight > 0) {
       const activeIndex = store.visibleCurrencies.indexOf(store.activeCurrency);
       const blockTop = activeIndex * blockHeight;
       const blockBottom = blockTop + blockHeight;
@@ -79,10 +49,13 @@ export const ConverterScreen = observer(function ConverterScreen() {
       scrollY = Math.max(0, Math.min(scrollY, keyboardHeight));
 
       scrollViewRef.current?.scrollTo({ y: scrollY, animated: true });
+    } else {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [
     store.activeCurrency,
     store.visibleCurrencies,
+    keyboardVisible,
     keyboardHeight,
     blockHeight,
     contentHeight,
@@ -90,11 +63,11 @@ export const ConverterScreen = observer(function ConverterScreen() {
 
   const handleCurrencyPress = (currency: CurrencyCode) => {
     store.selectCurrency(currency);
-    inputRef.current?.focus();
+    setKeyboardVisible(true);
   };
 
   const handleCurrencyCodePress = (index: number) => {
-    Keyboard.dismiss();
+    setKeyboardVisible(false);
     setEditingIndex(index);
     setPickerVisible(true);
   };
@@ -112,19 +85,21 @@ export const ConverterScreen = observer(function ConverterScreen() {
     setEditingIndex(null);
   };
 
-  const handleClear = () => {
-    store.updateInput('');
+  const handleEvaluate = () => {
+    store.evaluate();
+    setKeyboardVisible(false);
+    store.saveToHistory();
   };
 
-  const handleChangeText = (text: string) => {
-    store.updateInput(text);
+  const handleKeyboardHeight = (height: number) => {
+    setKeyboardHeight(height);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {keyboardHeight === 0 && (
+      {!keyboardVisible && (
         <View style={[styles.logoContainer, { bottom: insets.bottom + 16 }]}>
           <Pressable onPress={() => setSettingsVisible(true)} hitSlop={8}>
             <Image
@@ -135,18 +110,6 @@ export const ConverterScreen = observer(function ConverterScreen() {
         </View>
       )}
 
-      <TextInput
-        ref={inputRef}
-        style={styles.hiddenInput}
-        value={store.formatAmount(store.activeCurrency)}
-        onChangeText={handleChangeText}
-        keyboardType="decimal-pad"
-        selectionColor="#000"
-        inputAccessoryViewID={
-          Platform.OS === 'ios' ? INPUT_ACCESSORY_ID : undefined
-        }
-      />
-
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -154,10 +117,9 @@ export const ConverterScreen = observer(function ConverterScreen() {
           height: contentHeight + keyboardHeight,
           paddingBottom: keyboardHeight,
         }}
-        scrollEnabled={keyboardHeight > 0}
+        scrollEnabled={keyboardVisible}
         showsVerticalScrollIndicator={false}
         bounces={false}
-        keyboardShouldPersistTaps="handled"
       >
         {store.visibleCurrencies.map((currency, index) => (
           <CurrencyBlock
@@ -166,8 +128,7 @@ export const ConverterScreen = observer(function ConverterScreen() {
             isLast={index === store.visibleCurrencies.length - 1}
             onPress={handleCurrencyPress}
             onCurrencyCodePress={() => handleCurrencyCodePress(index)}
-            onClear={handleClear}
-            isKeyboardVisible={keyboardHeight > 0}
+            isKeyboardVisible={keyboardVisible}
           />
         ))}
       </ScrollView>
@@ -191,17 +152,18 @@ export const ConverterScreen = observer(function ConverterScreen() {
         <SettingsScreen onClose={() => setSettingsVisible(false)} />
       </Modal>
 
-      {Platform.OS === 'ios' && (
-        <InputAccessoryView nativeID={INPUT_ACCESSORY_ID}>
-          <View style={styles.accessoryContainer}>
-            <TouchableOpacity
-              onPress={Keyboard.dismiss}
-              style={styles.doneButton}
-            >
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </InputAccessoryView>
+      {keyboardVisible && (
+        <View style={styles.keyboardContainer}>
+          <CalculatorKeyboard
+            onDigit={(d) => store.appendDigit(d)}
+            onOperator={(op) => store.appendOperator(op)}
+            onDecimal={() => store.appendDecimal()}
+            onBackspace={() => store.backspace()}
+            onClear={() => store.clearInput()}
+            onEvaluate={handleEvaluate}
+            onHeightChange={handleKeyboardHeight}
+          />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -228,28 +190,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  hiddenInput: {
+  keyboardContainer: {
     position: 'absolute',
-    opacity: 0,
-    height: 1,
-    width: 1,
-  },
-  accessoryContainer: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ccc',
-  },
-  doneButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  doneButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#007AFF',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });

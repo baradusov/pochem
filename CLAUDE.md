@@ -143,3 +143,4 @@ class DatabaseAuthAdapter implements AuthPort {
 - Small, focused functions
 - Descriptive names over comments
 - Arrow functions everywhere (except class methods)
+- No `useCallback`/`useMemo` without a measured performance reason — they only help when passing to `React.memo` components

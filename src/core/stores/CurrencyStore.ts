@@ -12,6 +12,7 @@ import {
 import { ClipboardPort } from '../ports/ClipboardPort';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
+import { evaluateExpression } from '../utils/expression';
 import { formatNumber } from '../utils/format';
 
 export class CurrencyStore {
@@ -85,9 +86,7 @@ export class CurrencyStore {
   }
 
   private parseInput(value: string): number {
-    const normalized = value.replace(/\s/g, '').replace(',', '.');
-    const parsed = parseFloat(normalized);
-    return isNaN(parsed) ? 0 : parsed;
+    return evaluateExpression(value);
   }
 
   private toEUR(amount: number, fromCurrency: CurrencyCode): number {
@@ -133,12 +132,83 @@ export class CurrencyStore {
     this.setInputValue(newAmount > 0 ? formatNumber(newAmount) : '');
   }
 
-  updateInput(value: string): void {
-    const sanitized = value.replace(/[^0-9,\.]/g, '');
-    this.setInputValue(sanitized);
+  private static readonly OPERATORS = ['+', '-', '*', '/'];
 
-    const amount = this.parseInput(sanitized);
+  private isOperator(ch: string): boolean {
+    return CurrencyStore.OPERATORS.includes(ch);
+  }
+
+  private lastChar(): string {
+    return this.inputValue[this.inputValue.length - 1] ?? '';
+  }
+
+  private recalculate(): void {
+    const amount = this.parseInput(this.inputValue);
     this.setBaseAmountEUR(this.toEUR(amount, this.activeCurrency));
+  }
+
+  updateInput(value: string): void {
+    const sanitized = value.replace(/[^0-9,\.+\-*/]/g, '');
+    this.setInputValue(sanitized);
+    this.recalculate();
+  }
+
+  appendDigit(digit: string): void {
+    this.setInputValue(this.inputValue + digit);
+    this.recalculate();
+  }
+
+  appendOperator(operator: string): void {
+    if (this.inputValue === '') return;
+
+    if (this.isOperator(this.lastChar())) {
+      this.setInputValue(this.inputValue.slice(0, -1) + operator);
+    } else if (this.lastChar() === ',') {
+      return;
+    } else {
+      this.setInputValue(this.inputValue + operator);
+    }
+
+    this.recalculate();
+  }
+
+  appendDecimal(): void {
+    let lastNumberStart = 0;
+    for (let i = this.inputValue.length - 1; i >= 0; i--) {
+      if (this.isOperator(this.inputValue[i])) {
+        lastNumberStart = i + 1;
+        break;
+      }
+    }
+    const currentNumber = this.inputValue.slice(lastNumberStart);
+
+    if (currentNumber.includes(',')) return;
+
+    if (this.inputValue === '' || this.isOperator(this.lastChar())) {
+      this.setInputValue(this.inputValue + '0,');
+    } else {
+      this.setInputValue(this.inputValue + ',');
+    }
+
+    this.recalculate();
+  }
+
+  backspace(): void {
+    if (this.inputValue.length === 0) return;
+    this.setInputValue(this.inputValue.slice(0, -1));
+    this.recalculate();
+  }
+
+  clearInput(): void {
+    this.setInputValue('');
+    this.recalculate();
+  }
+
+  evaluate(): void {
+    const result = this.parseInput(this.inputValue);
+    if (result === 0 && this.inputValue === '') return;
+    this.setInputValue(result === 0 ? '' : formatNumber(result));
+    this.recalculate();
   }
 
   async replaceCurrency(
