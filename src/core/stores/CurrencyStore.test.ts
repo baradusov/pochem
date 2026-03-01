@@ -119,6 +119,19 @@ describe('CurrencyStore', () => {
 
       expect(ports.exchangeRatePort.fetchRates).not.toHaveBeenCalled();
     });
+
+    it('accepts cached rates with partial currency set (CBR fallback)', async () => {
+      const partialRates: ExchangeRates = {
+        ...mockRates,
+        rates: { EUR: 1, USD: 1.1, GEL: 3.0 } as ExchangeRates['rates'],
+      };
+      vi.mocked(ports.storagePort.loadRates).mockResolvedValue(partialRates);
+
+      await store.initialize();
+
+      expect(ports.exchangeRatePort.fetchRates).not.toHaveBeenCalled();
+      expect(store.rates).toEqual(partialRates);
+    });
   });
 
   describe('refreshIfStale', () => {

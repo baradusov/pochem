@@ -4,7 +4,6 @@ import {
   MAX_HISTORY_ENTRIES,
 } from '../entities/ConversionHistory';
 import {
-  AVAILABLE_CURRENCIES,
   CurrencyCode,
   DEFAULT_CURRENCIES,
   ExchangeRates,
@@ -78,11 +77,7 @@ export class CurrencyStore {
     const today = new Date().toISOString().split('T')[0];
     if (rates.lastFetchedAt !== today) return false;
     if (rates.updatedAt < rates.lastFetchedAt) return false;
-
-    const hasAllCurrencies = AVAILABLE_CURRENCIES.every(
-      (currency) => currency in rates.rates
-    );
-    return hasAllCurrencies;
+    return true;
   }
 
   private parseInput(value: string): number {
