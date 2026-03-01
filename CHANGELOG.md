@@ -6,6 +6,13 @@ This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
 **Note:** Versions 25.x were released in 2026 with an incorrect year prefix. Starting from 26.2.3, the correct year is used.
 
+## [26.2.6] - 2026-02-28
+
+### Fixed
+
+- Exchange rates now available in regions where Cloudflare is not accessible
+- Added fallback exchange rate sources for improved reliability
+
 ## [26.2.5] - 2026-02-22
 
 ### Added
