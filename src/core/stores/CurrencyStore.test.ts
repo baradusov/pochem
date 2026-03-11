@@ -471,6 +471,108 @@ describe('CurrencyStore', () => {
     });
   });
 
+  describe('cursor positioning', () => {
+    beforeEach(async () => {
+      await store.initialize();
+      store.selectCurrency('EUR');
+    });
+
+    it('places cursor at end after appending digit', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+
+      expect(store.cursorPosition).toBe(2);
+    });
+
+    it('inserts digit at cursor position', () => {
+      store.appendDigit('1');
+      store.appendDigit('3');
+      store.moveCursor(1);
+      store.appendDigit('2');
+
+      expect(store.inputValue).toBe('123');
+      expect(store.cursorPosition).toBe(2);
+    });
+
+    it('deletes character before cursor in the middle', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+      store.appendDigit('3');
+      store.moveCursor(2);
+      store.backspace();
+
+      expect(store.inputValue).toBe('13');
+      expect(store.cursorPosition).toBe(1);
+    });
+
+    it('does nothing on backspace when cursor is at start', () => {
+      store.appendDigit('1');
+      store.moveCursor(0);
+      store.backspace();
+
+      expect(store.inputValue).toBe('1');
+      expect(store.cursorPosition).toBe(0);
+    });
+
+    it('inserts operator at cursor position', () => {
+      store.appendDigit('5');
+      store.appendDigit('3');
+      store.moveCursor(1);
+      store.appendOperator('+');
+
+      expect(store.inputValue).toBe('5+3');
+      expect(store.cursorPosition).toBe(2);
+    });
+
+    it('inserts decimal at cursor position', () => {
+      store.appendDigit('5');
+      store.appendDigit('3');
+      store.moveCursor(1);
+      store.appendDecimal();
+
+      expect(store.inputValue).toBe('5,3');
+      expect(store.cursorPosition).toBe(2);
+    });
+
+    it('resets cursor on clearInput', () => {
+      store.appendDigit('1');
+      store.appendDigit('2');
+      store.clearInput();
+
+      expect(store.inputValue).toBe('');
+      expect(store.cursorPosition).toBe(1);
+    });
+
+    it('places cursor at end after evaluate', () => {
+      store.updateInput('10+5');
+      store.evaluate();
+
+      expect(store.inputValue).toBe('15,00');
+      expect(store.cursorPosition).toBe(5);
+    });
+
+    it('places cursor at end after selectCurrency', () => {
+      store.updateInput('100');
+      store.selectCurrency('USD');
+
+      expect(store.cursorPosition).toBe(store.inputValue.length);
+    });
+
+    it('clamps cursor to input length', () => {
+      store.appendDigit('1');
+      store.moveCursor(999);
+
+      expect(store.cursorPosition).toBe(1);
+    });
+
+    it('clamps cursor to zero', () => {
+      store.appendDigit('1');
+      store.moveCursor(-5);
+
+      expect(store.cursorPosition).toBe(0);
+    });
+  });
+
   describe('conversion history', () => {
     beforeEach(async () => {
       await store.initialize();

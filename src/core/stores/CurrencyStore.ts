@@ -123,8 +123,8 @@ export class CurrencyStore {
   }
 
   async copyAmount(currency: CurrencyCode): Promise<void> {
+    if (this.inputValue === '') return;
     const formatted = this.formatAmount(currency);
-    if (!formatted) return;
     await this.clipboardPort.copy(formatted.replace(/\s/g, ''));
   }
 
