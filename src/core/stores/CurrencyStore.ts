@@ -20,6 +20,7 @@ export class CurrencyStore {
   blockCount: number = 4;
   activeCurrency: CurrencyCode = 'GEL';
   inputValue: string = '';
+  cursorPosition: number = 1;
   baseAmountEUR: number = 0;
   loading = true;
   refreshing = false;
@@ -51,6 +52,14 @@ export class CurrencyStore {
 
   private setInputValue(value: string): void {
     this.inputValue = value;
+  }
+
+  private get displayLength(): number {
+    return this.formatAmount(this.activeCurrency).length;
+  }
+
+  private setCursorPosition(position: number): void {
+    this.cursorPosition = Math.max(0, Math.min(position, this.displayLength));
   }
 
   private setBaseAmountEUR(amount: number): void {
@@ -104,11 +113,11 @@ export class CurrencyStore {
 
   formatAmount(currency: CurrencyCode): string {
     if (currency === this.activeCurrency) {
-      return this.inputValue;
+      return this.inputValue || '0';
     }
 
     const amount = this.getAmount(currency);
-    if (amount === 0 && this.inputValue === '') return '';
+    if (amount === 0 && this.inputValue === '') return '0';
 
     return formatNumber(amount);
   }
@@ -124,7 +133,9 @@ export class CurrencyStore {
 
     const newAmount = this.getAmount(currency);
     this.setActiveCurrency(currency);
-    this.setInputValue(newAmount > 0 ? formatNumber(newAmount) : '');
+    const newValue = newAmount > 0 ? formatNumber(newAmount) : '';
+    this.setInputValue(newValue);
+    this.setCursorPosition(newValue.length);
   }
 
   private static readonly OPERATORS = ['+', '-', '*', '/'];
@@ -133,8 +144,8 @@ export class CurrencyStore {
     return CurrencyStore.OPERATORS.includes(ch);
   }
 
-  private lastChar(): string {
-    return this.inputValue[this.inputValue.length - 1] ?? '';
+  moveCursor(position: number): void {
+    this.setCursorPosition(position);
   }
 
   private recalculate(): void {
@@ -145,64 +156,102 @@ export class CurrencyStore {
   updateInput(value: string): void {
     const sanitized = value.replace(/[^0-9,\.+\-*/]/g, '');
     this.setInputValue(sanitized);
+    if (this.cursorPosition > sanitized.length) {
+      this.setCursorPosition(sanitized.length);
+    }
     this.recalculate();
   }
 
   appendDigit(digit: string): void {
-    this.setInputValue(this.inputValue + digit);
+    const pos = this.cursorPosition;
+    const before = this.inputValue.slice(0, pos);
+    const after = this.inputValue.slice(pos);
+    this.setInputValue(before + digit + after);
+    this.setCursorPosition(pos + 1);
     this.recalculate();
   }
 
   appendOperator(operator: string): void {
     if (this.inputValue === '') return;
 
-    if (this.isOperator(this.lastChar())) {
-      this.setInputValue(this.inputValue.slice(0, -1) + operator);
-    } else if (this.lastChar() === ',') {
+    const pos = this.cursorPosition;
+    const charBefore = pos > 0 ? this.inputValue[pos - 1] : '';
+
+    if (this.isOperator(charBefore)) {
+      const before = this.inputValue.slice(0, pos - 1);
+      const after = this.inputValue.slice(pos);
+      this.setInputValue(before + operator + after);
+    } else if (charBefore === ',') {
       return;
     } else {
-      this.setInputValue(this.inputValue + operator);
+      const before = this.inputValue.slice(0, pos);
+      const after = this.inputValue.slice(pos);
+      this.setInputValue(before + operator + after);
+      this.setCursorPosition(pos + 1);
     }
 
     this.recalculate();
   }
 
   appendDecimal(): void {
-    let lastNumberStart = 0;
-    for (let i = this.inputValue.length - 1; i >= 0; i--) {
+    const pos = this.cursorPosition;
+
+    let segmentStart = 0;
+    for (let i = pos - 1; i >= 0; i--) {
       if (this.isOperator(this.inputValue[i])) {
-        lastNumberStart = i + 1;
+        segmentStart = i + 1;
         break;
       }
     }
-    const currentNumber = this.inputValue.slice(lastNumberStart);
 
-    if (currentNumber.includes(',')) return;
+    let segmentEnd = this.inputValue.length;
+    for (let i = pos; i < this.inputValue.length; i++) {
+      if (this.isOperator(this.inputValue[i])) {
+        segmentEnd = i;
+        break;
+      }
+    }
 
-    if (this.inputValue === '' || this.isOperator(this.lastChar())) {
-      this.setInputValue(this.inputValue + '0,');
+    const segment = this.inputValue.slice(segmentStart, segmentEnd);
+    if (segment.includes(',')) return;
+
+    const charBefore = pos > 0 ? this.inputValue[pos - 1] : '';
+    const before = this.inputValue.slice(0, pos);
+    const after = this.inputValue.slice(pos);
+
+    if (pos === 0 || this.isOperator(charBefore)) {
+      this.setInputValue(before + '0,' + after);
+      this.setCursorPosition(pos + 2);
     } else {
-      this.setInputValue(this.inputValue + ',');
+      this.setInputValue(before + ',' + after);
+      this.setCursorPosition(pos + 1);
     }
 
     this.recalculate();
   }
 
   backspace(): void {
-    if (this.inputValue.length === 0) return;
-    this.setInputValue(this.inputValue.slice(0, -1));
+    if (this.cursorPosition === 0) return;
+    const pos = this.cursorPosition;
+    const before = this.inputValue.slice(0, pos - 1);
+    const after = this.inputValue.slice(pos);
+    this.setInputValue(before + after);
+    this.setCursorPosition(pos - 1);
     this.recalculate();
   }
 
   clearInput(): void {
     this.setInputValue('');
+    this.setCursorPosition(this.displayLength);
     this.recalculate();
   }
 
   evaluate(): void {
     const result = this.parseInput(this.inputValue);
     if (result === 0 && this.inputValue === '') return;
-    this.setInputValue(result === 0 ? '' : formatNumber(result));
+    const newValue = result === 0 ? '' : formatNumber(result);
+    this.setInputValue(newValue);
+    this.setCursorPosition(newValue.length);
     this.recalculate();
   }
 
@@ -327,6 +376,7 @@ export class CurrencyStore {
 
     const formattedAmount = formatNumber(entry.sourceAmount);
     this.setInputValue(formattedAmount);
+    this.setCursorPosition(formattedAmount.length);
     this.setBaseAmountEUR(this.toEUR(entry.sourceAmount, entry.sourceCurrency));
 
     this.storagePort.saveSelectedCurrencies(entry.currencies);

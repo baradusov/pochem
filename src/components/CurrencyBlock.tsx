@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   StyleSheet,
   LayoutChangeEvent,
@@ -72,6 +73,16 @@ export const CurrencyBlock = observer(function CurrencyBlock({
     onPress(currency);
   };
 
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (isActive && isKeyboardVisible) {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }
+  }, [isActive, isKeyboardVisible]);
+
   const showCopy = displayValue !== '' && displayValue !== '0';
 
   const copyScale = useRef(new Animated.Value(1)).current;
@@ -118,18 +129,45 @@ export const CurrencyBlock = observer(function CurrencyBlock({
       </View>
 
       <View style={styles.valueContainer}>
-        <Text
-          style={[
-            styles.valueText,
-            { fontSize },
-            isHighlighted && styles.activeText,
-          ]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.3}
-        >
-          {displayValue || '0'}
-        </Text>
+        {isActive && isKeyboardVisible ? (
+          <TextInput
+            ref={inputRef}
+            value={displayValue}
+            selection={{
+              start: store.cursorPosition,
+              end: store.cursorPosition,
+            }}
+            onSelectionChange={(e) =>
+              store.moveCursor(e.nativeEvent.selection.start)
+            }
+            onChangeText={(text) => store.updateInput(text)}
+            showSoftInputOnFocus={false}
+            inputMode="none"
+            autoCorrect={false}
+            spellCheck={false}
+            selectionColor="#000"
+            underlineColorAndroid="transparent"
+            style={[
+              styles.valueText,
+              styles.textInput,
+              { fontSize },
+              styles.activeText,
+            ]}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.valueText,
+              { fontSize },
+              isHighlighted && styles.activeText,
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.3}
+          >
+            {displayValue}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
@@ -177,6 +215,9 @@ const styles = StyleSheet.create({
     color: '#999',
     padding: 0,
     margin: 0,
+  },
+  textInput: {
+    height: '100%',
   },
   activeText: {
     color: '#000',
