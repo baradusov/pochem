@@ -9,4 +9,4 @@ export interface ConversionHistoryEntry {
   amounts: Record<CurrencyCode, number>;
 }
 
-export const MAX_HISTORY_ENTRIES = 10;
+export const MAX_HISTORY_ENTRIES = 50;

@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
   Text,
+  TextInput,
   Pressable,
   FlatList,
   StyleSheet,
 } from 'react-native';
-import { AVAILABLE_CURRENCIES, CurrencyCode } from '../core/entities/Currency';
+import { Feather } from '@expo/vector-icons';
+import { CURRENCY_INFO, CurrencyCode } from '../core/entities/Currency';
+import { searchCurrencies } from '../core/utils/searchCurrencies';
 
 interface CurrencyPickerProps {
   visible: boolean;
   currentCurrency: CurrencyCode;
-  disabledCurrencies: CurrencyCode[];
+  onScreenCurrencies: CurrencyCode[];
   onSelect: (currency: CurrencyCode) => void;
   onClose: () => void;
 }
@@ -20,38 +23,48 @@ interface CurrencyPickerProps {
 export const CurrencyPicker = ({
   visible,
   currentCurrency,
-  disabledCurrencies,
+  onScreenCurrencies,
   onSelect,
   onClose,
 }: CurrencyPickerProps) => {
+  const [query, setQuery] = useState('');
+  const results = searchCurrencies(query);
+
+  const handleSelect = (currency: CurrencyCode) => {
+    setQuery('');
+    onSelect(currency);
+  };
+
+  const handleClose = () => {
+    setQuery('');
+    onClose();
+  };
+
+  const handleSubmit = () => {
+    if (results.length > 0) {
+      handleSelect(results[0]);
+    }
+  };
+
   const renderItem = ({ item }: { item: CurrencyCode }) => {
-    const isDisabled =
-      disabledCurrencies.includes(item) && item !== currentCurrency;
+    const info = CURRENCY_INFO[item];
     const isCurrent = item === currentCurrency;
+    const isOnScreen = !isCurrent && onScreenCurrencies.includes(item);
 
     return (
       <Pressable
-        style={[
-          styles.item,
-          isCurrent && styles.currentItem,
-          isDisabled && styles.disabledItem,
-        ]}
-        onPress={() => {
-          if (!isDisabled) {
-            onSelect(item);
-          }
-        }}
-        disabled={isDisabled}
+        style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+        onPress={() => handleSelect(item)}
       >
-        <Text
-          style={[
-            styles.itemText,
-            isCurrent && styles.currentItemText,
-            isDisabled && styles.disabledItemText,
-          ]}
-        >
-          {item}
-        </Text>
+        <Text style={styles.flag}>{info.flag}</Text>
+        <View style={styles.itemText}>
+          <Text style={styles.code}>{item}</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {info.name}
+          </Text>
+        </View>
+        {isCurrent && <Feather name="check" size={20} color="#000" />}
+        {isOnScreen && <Text style={styles.swapHint}>⇅ swap</Text>}
       </Pressable>
     );
   };
@@ -61,21 +74,42 @@ export const CurrencyPicker = ({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Select Currency</Text>
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Done</Text>
+          <View style={styles.searchBox}>
+            <Feather name="search" size={17} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={handleSubmit}
+              placeholder="Currency, country or city"
+              placeholderTextColor="#8E8E93"
+              autoFocus
+              autoCorrect={false}
+              autoCapitalize="none"
+              spellCheck={false}
+              returnKeyType="done"
+              clearButtonMode="while-editing"
+              selectionColor="#000"
+            />
+          </View>
+          <Pressable onPress={handleClose} hitSlop={8}>
+            <Text style={styles.cancel}>Cancel</Text>
           </Pressable>
         </View>
 
         <FlatList
-          data={AVAILABLE_CURRENCIES as unknown as CurrencyCode[]}
+          data={results}
           renderItem={renderItem}
           keyExtractor={(item) => item}
-          contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ListEmptyComponent={
+            <Text style={styles.empty}>Nothing found for “{query}”</Text>
+          }
         />
       </View>
     </Modal>
@@ -89,48 +123,67 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#ddd',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  closeButton: {
+  searchBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 40,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: '#F2F2F7',
   },
-  closeButtonText: {
+  searchInput: {
+    flex: 1,
     fontSize: 17,
-    fontWeight: '600',
-    color: '#007AFF',
+    color: '#000',
+    padding: 0,
   },
-  list: {
-    paddingVertical: 8,
+  cancel: {
+    fontSize: 17,
+    color: '#000',
   },
   item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 10,
   },
-  currentItem: {
-    backgroundColor: '#f0f0f0',
+  itemPressed: {
+    backgroundColor: '#F2F2F7',
   },
-  disabledItem: {
-    opacity: 0.4,
+  flag: {
+    fontSize: 28,
   },
   itemText: {
+    flex: 1,
+  },
+  code: {
     fontSize: 17,
+    fontWeight: '600',
     color: '#000',
   },
-  currentItemText: {
-    fontWeight: '600',
+  name: {
+    fontSize: 14,
+    color: '#8E8E93',
   },
-  disabledItemText: {
-    color: '#999',
+  swapHint: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  empty: {
+    padding: 32,
+    textAlign: 'center',
+    fontSize: 15,
+    color: '#8E8E93',
   },
 });

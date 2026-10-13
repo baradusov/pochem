@@ -1,12 +1,5 @@
 import React, { useRef } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Animated,
-  LayoutChangeEvent,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -18,7 +11,6 @@ interface CalculatorKeyboardProps {
   onBackspace: () => void;
   onClear: () => void;
   onEvaluate: () => void;
-  onHeightChange?: (height: number) => void;
 }
 
 const OPERATORS = [
@@ -97,19 +89,11 @@ export const CalculatorKeyboard = ({
   onBackspace,
   onClear,
   onEvaluate,
-  onHeightChange,
 }: CalculatorKeyboardProps) => {
   const insets = useSafeAreaInsets();
 
-  const handleLayout = (e: LayoutChangeEvent) => {
-    onHeightChange?.(e.nativeEvent.layout.height);
-  };
-
   return (
-    <View
-      style={[styles.container, { paddingBottom: insets.bottom }]}
-      onLayout={handleLayout}
-    >
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.operatorRow}>
         {OPERATORS.map(({ label, value }) => (
           <KeyButton key={value} onPress={() => onOperator(value)}>

@@ -1,13 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
   StatusBar,
-  ScrollView,
   useWindowDimensions,
   Modal,
   Pressable,
   Image,
+  LayoutAnimation,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -15,59 +15,66 @@ import {
 } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { CurrencyCode } from '../core/entities/Currency';
-import { CurrencyBlock } from '../components/CurrencyBlock';
+import {
+  BLOCK_CHROME_HEIGHT,
+  BLOCK_PADDING_HORIZONTAL,
+  CurrencyBlock,
+} from '../components/CurrencyBlock';
 import { CurrencyPicker } from '../components/CurrencyPicker';
 import { CalculatorKeyboard } from '../components/CalculatorKeyboard';
+import { fitFontSize } from '../components/fitFontSize';
 import { SettingsScreen } from './SettingsScreen';
 import { useCurrency } from '../hooks/useCurrency';
 
+/** While typing, the edited block takes this many shares of height, others one */
+const EDITED_BLOCK_FLEX = 2;
+
+const animateLayout = () => {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+};
+
 export const ConverterScreen = observer(function ConverterScreen() {
   const store = useCurrency();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const { height: windowHeight } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [blocksHeight, setBlocksHeight] = useState(0);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
 
-  const contentHeight = windowHeight - insets.top;
-  const blockHeight = contentHeight / store.visibleCurrencies.length;
+  const currencies = store.visibleCurrencies;
+  const isExpanded = (currency: CurrencyCode) =>
+    store.isEditing && currency === store.activeCurrency;
+  const flexOf = (currency: CurrencyCode) =>
+    isExpanded(currency) ? EDITED_BLOCK_FLEX : 1;
+  const totalFlex = currencies.reduce((sum, c) => sum + flexOf(c), 0);
 
-  useEffect(() => {
-    if (keyboardVisible && keyboardHeight > 0) {
-      const activeIndex = store.visibleCurrencies.indexOf(store.activeCurrency);
-      const blockTop = activeIndex * blockHeight;
-      const blockBottom = blockTop + blockHeight;
-      const visibleHeight = contentHeight - keyboardHeight;
+  const fitBlockFont = (currency: CurrencyCode) =>
+    fitFontSize(
+      store.formatAmount(currency),
+      width - BLOCK_PADDING_HORIZONTAL * 2,
+      (blocksHeight * flexOf(currency)) / totalFlex - BLOCK_CHROME_HEIGHT
+    );
 
-      let scrollY = 0;
-      if (blockBottom > visibleHeight) {
-        scrollY = blockBottom - visibleHeight;
-      }
-      scrollY = Math.max(0, Math.min(scrollY, keyboardHeight));
-
-      scrollViewRef.current?.scrollTo({ y: scrollY, animated: true });
-    } else {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    }
-  }, [
-    store.activeCurrency,
-    store.visibleCurrencies,
-    keyboardVisible,
-    keyboardHeight,
-    blockHeight,
-    contentHeight,
-  ]);
+  // Non-edited blocks share one size so the numbers read as a single table
+  const sharedFontSize = Math.min(
+    ...currencies.filter((c) => !isExpanded(c)).map(fitBlockFont)
+  );
+  const fontSizeOf = (currency: CurrencyCode) =>
+    isExpanded(currency) ? fitBlockFont(currency) : sharedFontSize;
 
   const handleCurrencyPress = (currency: CurrencyCode) => {
-    store.selectCurrency(currency);
-    setKeyboardVisible(true);
+    if (!isExpanded(currency)) animateLayout();
+    store.startEditing(currency);
+  };
+
+  const handleEvaluate = () => {
+    animateLayout();
+    store.finishEditing();
   };
 
   const handleCurrencyCodePress = (index: number) => {
-    setKeyboardVisible(false);
+    if (store.isEditing) handleEvaluate();
     setEditingIndex(index);
     setPickerVisible(true);
   };
@@ -85,21 +92,39 @@ export const ConverterScreen = observer(function ConverterScreen() {
     setEditingIndex(null);
   };
 
-  const handleEvaluate = () => {
-    store.evaluate();
-    setKeyboardVisible(false);
-    store.saveToHistory();
-  };
-
-  const handleKeyboardHeight = (height: number) => {
-    setKeyboardHeight(height);
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {!keyboardVisible && (
+      <View
+        style={styles.blocks}
+        onLayout={(e) => setBlocksHeight(e.nativeEvent.layout.height)}
+      >
+        {currencies.map((currency, index) => (
+          <CurrencyBlock
+            key={`${index}-${currency}`}
+            currency={currency}
+            isLast={index === currencies.length - 1}
+            flex={flexOf(currency)}
+            fontSize={fontSizeOf(currency)}
+            onPress={handleCurrencyPress}
+            onCurrencyCodePress={() => handleCurrencyCodePress(index)}
+          />
+        ))}
+      </View>
+
+      {store.isEditing && (
+        <CalculatorKeyboard
+          onDigit={(d) => store.appendDigit(d)}
+          onOperator={(op) => store.appendOperator(op)}
+          onDecimal={() => store.appendDecimal()}
+          onBackspace={() => store.backspace()}
+          onClear={() => store.clearInput()}
+          onEvaluate={handleEvaluate}
+        />
+      )}
+
+      {!store.isEditing && (
         <View style={[styles.logoContainer, { bottom: insets.bottom + 16 }]}>
           <Pressable onPress={() => setSettingsVisible(true)} hitSlop={8}>
             <Image
@@ -110,35 +135,12 @@ export const ConverterScreen = observer(function ConverterScreen() {
         </View>
       )}
 
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={{
-          height: contentHeight + keyboardHeight,
-          paddingBottom: keyboardHeight,
-        }}
-        scrollEnabled={keyboardVisible}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {store.visibleCurrencies.map((currency, index) => (
-          <CurrencyBlock
-            key={`${index}-${currency}`}
-            currency={currency}
-            isLast={index === store.visibleCurrencies.length - 1}
-            onPress={handleCurrencyPress}
-            onCurrencyCodePress={() => handleCurrencyCodePress(index)}
-            isKeyboardVisible={keyboardVisible}
-          />
-        ))}
-      </ScrollView>
-
       <CurrencyPicker
         visible={pickerVisible}
         currentCurrency={
-          editingIndex !== null ? store.visibleCurrencies[editingIndex] : 'EUR'
+          editingIndex !== null ? currencies[editingIndex] : 'EUR'
         }
-        disabledCurrencies={store.selectedCurrencies}
+        onScreenCurrencies={currencies}
         onSelect={handlePickerSelect}
         onClose={handlePickerClose}
       />
@@ -151,20 +153,6 @@ export const ConverterScreen = observer(function ConverterScreen() {
       >
         <SettingsScreen onClose={() => setSettingsVisible(false)} />
       </Modal>
-
-      {keyboardVisible && (
-        <View style={styles.keyboardContainer}>
-          <CalculatorKeyboard
-            onDigit={(d) => store.appendDigit(d)}
-            onOperator={(op) => store.appendOperator(op)}
-            onDecimal={() => store.appendDecimal()}
-            onBackspace={() => store.backspace()}
-            onClear={() => store.clearInput()}
-            onEvaluate={handleEvaluate}
-            onHeightChange={handleKeyboardHeight}
-          />
-        </View>
-      )}
     </SafeAreaView>
   );
 });
@@ -173,6 +161,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  blocks: {
+    flex: 1,
   },
   logoContainer: {
     position: 'absolute',
@@ -186,14 +177,5 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     borderRadius: '50%',
     borderWidth: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  keyboardContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
 });

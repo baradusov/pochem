@@ -14,8 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { ConversionHistoryEntry } from '../core/entities/ConversionHistory';
-import { formatDate, formatNumber } from '../core/utils/format';
-import { groupHistoryByDate } from '../core/utils/group';
+import { formatDate } from '../core/utils/format';
+import { HistoryList } from '../components/HistoryList';
 import { useCurrency } from '../hooks/useCurrency';
 
 interface SettingsScreenProps {
@@ -23,37 +23,6 @@ interface SettingsScreenProps {
 }
 
 const BLOCK_COUNT_OPTIONS = [2, 3, 4];
-
-interface HistoryEntryViewProps {
-  entry: ConversionHistoryEntry;
-  onPress: () => void;
-}
-
-const HistoryEntryView = ({ entry, onPress }: HistoryEntryViewProps) => {
-  const otherCurrencies = entry.currencies.filter(
-    (c) => c !== entry.sourceCurrency
-  );
-
-  return (
-    <Pressable style={styles.historyEntry} onPress={onPress}>
-      <Text style={styles.sourceCurrencyLabel}>{entry.sourceCurrency}</Text>
-      <Text style={styles.sourceAmount}>
-        {formatNumber(entry.sourceAmount)}
-      </Text>
-
-      <View style={styles.otherCurrenciesRow}>
-        {otherCurrencies.map((currency) => (
-          <View key={currency} style={styles.otherCurrencyItem}>
-            <Text style={styles.otherCurrencyLabel}>{currency}</Text>
-            <Text style={styles.otherCurrencyAmount}>
-              {formatNumber(entry.amounts[currency])}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </Pressable>
-  );
-};
 
 export const SettingsScreen = observer(function SettingsScreen({
   onClose,
@@ -92,8 +61,6 @@ export const SettingsScreen = observer(function SettingsScreen({
     store.restoreFromHistory(entry);
     onClose();
   };
-
-  const groupedHistory = groupHistoryByDate(store.conversionHistory);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -139,19 +106,7 @@ export const SettingsScreen = observer(function SettingsScreen({
         {store.conversionHistory.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>History</Text>
-
-            {groupedHistory.map((group) => (
-              <View key={group.date}>
-                <Text style={styles.dateHeader}>{formatDate(group.date)}</Text>
-                {group.entries.map((entry) => (
-                  <HistoryEntryView
-                    key={entry.id}
-                    entry={entry}
-                    onPress={() => handleHistoryPress(entry)}
-                  />
-                ))}
-              </View>
-            ))}
+            <HistoryList onSelect={handleHistoryPress} />
           </>
         )}
 
@@ -257,47 +212,6 @@ const styles = StyleSheet.create({
   refreshIcon: {
     fontSize: 17,
     color: '#007AFF',
-  },
-  dateHeader: {
-    fontSize: 14,
-    color: '#666',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  historyEntry: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  sourceCurrencyLabel: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  sourceAmount: {
-    fontSize: 40,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  otherCurrenciesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    rowGap: 8,
-  },
-  otherCurrencyItem: {
-    flexDirection: 'column',
-  },
-  otherCurrencyLabel: {
-    fontSize: 12,
-    color: '#666',
-    textTransform: 'uppercase',
-  },
-  otherCurrencyAmount: {
-    fontSize: 15,
-    color: '#000',
   },
   footerSpacer: {
     height: 20,

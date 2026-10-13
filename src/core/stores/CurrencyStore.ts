@@ -11,8 +11,13 @@ import {
 import { ClipboardPort } from '../ports/ClipboardPort';
 import { ExchangeRatePort } from '../ports/ExchangeRatePort';
 import { StoragePort } from '../ports/StoragePort';
-import { evaluateExpression } from '../utils/expression';
+import {
+  evaluateExpression,
+  fromDisplayExpression,
+  toDisplayExpression,
+} from '../utils/expression';
 import { formatNumber } from '../utils/format';
+import { nearestPowerOfTen, stepNiceNumber } from '../utils/niceNumber';
 
 export class CurrencyStore {
   rates: ExchangeRates | null = null;
@@ -25,6 +30,8 @@ export class CurrencyStore {
   loading = true;
   refreshing = false;
   conversionHistory: ConversionHistoryEntry[] = [];
+  isEditing = false;
+  private scrubOrigin: number | null = null;
 
   constructor(
     private exchangeRatePort: ExchangeRatePort,
@@ -78,6 +85,18 @@ export class CurrencyStore {
     this.conversionHistory = entries;
   }
 
+  private setEditing(editing: boolean): void {
+    this.isEditing = editing;
+  }
+
+  private setScrubOrigin(origin: number | null): void {
+    this.scrubOrigin = origin;
+  }
+
+  get hasInput(): boolean {
+    return this.inputValue !== '';
+  }
+
   get visibleCurrencies(): CurrencyCode[] {
     return this.selectedCurrencies.slice(0, this.blockCount);
   }
@@ -113,7 +132,7 @@ export class CurrencyStore {
 
   formatAmount(currency: CurrencyCode): string {
     if (currency === this.activeCurrency) {
-      return this.inputValue || '0';
+      return toDisplayExpression(this.inputValue) || '0';
     }
 
     const amount = this.getAmount(currency);
@@ -123,9 +142,59 @@ export class CurrencyStore {
   }
 
   async copyAmount(currency: CurrencyCode): Promise<void> {
-    if (this.inputValue === '') return;
-    const formatted = this.formatAmount(currency);
+    if (!this.hasInput) return;
+    const formatted = formatNumber(this.getAmount(currency));
     await this.clipboardPort.copy(formatted.replace(/\s/g, ''));
+  }
+
+  startEditing(currency: CurrencyCode): void {
+    this.selectCurrency(currency);
+    this.setEditing(true);
+  }
+
+  async finishEditing(): Promise<void> {
+    this.evaluate();
+    this.setEditing(false);
+    await this.saveToHistory();
+  }
+
+  /**
+   * Scrubbing: drag a number to walk through nice amounts (…, 300, 400, 500, …).
+   * Starts from whatever the currency currently shows.
+   */
+  beginScrub(currency: CurrencyCode): void {
+    const origin = this.getAmount(currency);
+
+    this.setScrubOrigin(origin);
+    this.setActiveCurrency(currency);
+    this.applyAmount(origin);
+  }
+
+  scrub(steps: number): void {
+    if (this.scrubOrigin === null) return;
+    const unit = this.scrubUnit(this.activeCurrency);
+    this.applyAmount(stepNiceNumber(this.scrubOrigin, steps, unit));
+  }
+
+  /**
+   * Where scrubbing from zero starts: a round amount worth about 1 EUR,
+   * so 1 USD but 100 RUB and 100 JPY — every currency moves at a useful pace.
+   */
+  private scrubUnit(currency: CurrencyCode): number {
+    return nearestPowerOfTen(this.fromEUR(1, currency));
+  }
+
+  async endScrub(): Promise<void> {
+    if (this.scrubOrigin === null) return;
+    this.setScrubOrigin(null);
+    await this.saveToHistory();
+  }
+
+  private applyAmount(amount: number): void {
+    const value = amount > 0 ? formatNumber(amount) : '';
+    this.setInputValue(value);
+    this.setCursorPosition(value.length);
+    this.recalculate();
   }
 
   selectCurrency(currency: CurrencyCode): void {
@@ -154,7 +223,10 @@ export class CurrencyStore {
   }
 
   updateInput(value: string): void {
-    const sanitized = value.replace(/[^0-9,\.+\-*/]/g, '');
+    const sanitized = fromDisplayExpression(value).replace(
+      /[^0-9,\.+\-*/]/g,
+      ''
+    );
     this.setInputValue(sanitized);
     if (this.cursorPosition > sanitized.length) {
       this.setCursorPosition(sanitized.length);
@@ -249,22 +321,30 @@ export class CurrencyStore {
   evaluate(): void {
     const result = this.parseInput(this.inputValue);
     if (result === 0 && this.inputValue === '') return;
-    const newValue = result === 0 ? '' : formatNumber(result);
-    this.setInputValue(newValue);
-    this.setCursorPosition(newValue.length);
-    this.recalculate();
+    this.applyAmount(result);
   }
 
+  /**
+   * Puts `newCurrency` into slot `index`. If it is already selected
+   * elsewhere, the two currencies swap places instead of duplicating.
+   */
   async replaceCurrency(
     index: number,
     newCurrency: CurrencyCode
   ): Promise<void> {
     const updated = [...this.selectedCurrencies];
     const oldCurrency = updated[index];
+    if (oldCurrency === newCurrency) return;
+
+    const existingIndex = updated.indexOf(newCurrency);
+    const isSwap = existingIndex !== -1;
+    if (isSwap) {
+      updated[existingIndex] = oldCurrency;
+    }
     updated[index] = newCurrency;
     this.setSelectedCurrencies(updated);
 
-    if (this.activeCurrency === oldCurrency) {
+    if (!isSwap && this.activeCurrency === oldCurrency) {
       this.setActiveCurrency(newCurrency);
       const amount = this.parseInput(this.inputValue);
       this.setBaseAmountEUR(this.toEUR(amount, newCurrency));
@@ -352,6 +432,14 @@ export class CurrencyStore {
     for (const currency of this.visibleCurrencies) {
       amounts[currency] = this.getAmount(currency);
     }
+
+    const latest = this.conversionHistory[0];
+    const isRepeat =
+      latest !== undefined &&
+      latest.sourceCurrency === this.activeCurrency &&
+      latest.sourceAmount === sourceAmount &&
+      latest.currencies.join() === this.visibleCurrencies.join();
+    if (isRepeat) return;
 
     const entry: ConversionHistoryEntry = {
       id: Date.now().toString(),

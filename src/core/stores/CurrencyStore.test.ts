@@ -218,7 +218,7 @@ describe('CurrencyStore', () => {
       store.selectCurrency('EUR');
       store.updateInput('1000');
 
-      expect(store.formatAmount('RUB')).toBe('100 000,00');
+      expect(store.formatAmount('RUB')).toBe('100 000');
     });
 
     it('returns input value for active currency', () => {
@@ -240,7 +240,7 @@ describe('CurrencyStore', () => {
       store.selectCurrency('USD');
 
       expect(store.activeCurrency).toBe('USD');
-      expect(store.inputValue).toBe('110,00');
+      expect(store.inputValue).toBe('110');
     });
   });
 
@@ -255,7 +255,7 @@ describe('CurrencyStore', () => {
 
       await store.copyAmount('RUB');
 
-      expect(ports.clipboardPort.copy).toHaveBeenCalledWith('100000,00');
+      expect(ports.clipboardPort.copy).toHaveBeenCalledWith('100000');
     });
 
     it('copies active currency input value without spaces', async () => {
@@ -441,14 +441,14 @@ describe('CurrencyStore', () => {
       store.updateInput('10+5');
       store.evaluate();
 
-      expect(store.inputValue).toBe('15,00');
+      expect(store.inputValue).toBe('15');
     });
 
     it('respects operator precedence', () => {
       store.updateInput('2+3*4');
       store.evaluate();
 
-      expect(store.inputValue).toBe('14,00');
+      expect(store.inputValue).toBe('14');
     });
 
     it('clears input when result is 0', () => {
@@ -547,8 +547,8 @@ describe('CurrencyStore', () => {
       store.updateInput('10+5');
       store.evaluate();
 
-      expect(store.inputValue).toBe('15,00');
-      expect(store.cursorPosition).toBe(5);
+      expect(store.inputValue).toBe('15');
+      expect(store.cursorPosition).toBe(2);
     });
 
     it('places cursor at end after selectCurrency', () => {
@@ -570,6 +570,174 @@ describe('CurrencyStore', () => {
       store.moveCursor(-5);
 
       expect(store.cursorPosition).toBe(0);
+    });
+  });
+
+  describe('editing', () => {
+    beforeEach(async () => {
+      await store.initialize();
+    });
+
+    it('starts editing the selected currency', () => {
+      store.startEditing('EUR');
+
+      expect(store.isEditing).toBe(true);
+      expect(store.activeCurrency).toBe('EUR');
+    });
+
+    it('evaluates, stops editing and saves history on finish', async () => {
+      store.startEditing('EUR');
+      store.updateInput('10*2');
+
+      await store.finishEditing();
+
+      expect(store.isEditing).toBe(false);
+      expect(store.inputValue).toBe('20');
+      expect(store.conversionHistory[0].sourceAmount).toBe(20);
+    });
+
+    it('displays typographic operators in the active field', () => {
+      store.startEditing('EUR');
+      store.updateInput('10*2-1/4');
+
+      expect(store.formatAmount('EUR')).toBe('10×2−1÷4');
+    });
+
+    it('accepts typographic operators as input', () => {
+      store.startEditing('EUR');
+      store.updateInput('10×2');
+
+      expect(store.inputValue).toBe('10*2');
+      expect(store.getAmount('EUR')).toBe(20);
+    });
+
+    it('copies the evaluated amount of an expression', async () => {
+      store.startEditing('EUR');
+      store.updateInput('10*2');
+
+      await store.copyAmount('EUR');
+
+      expect(ports.clipboardPort.copy).toHaveBeenCalledWith('20');
+    });
+  });
+
+  describe('scrubbing', () => {
+    beforeEach(async () => {
+      await store.initialize();
+    });
+
+    it('starts from zero when empty', () => {
+      store.beginScrub('EUR');
+
+      expect(store.activeCurrency).toBe('EUR');
+      expect(store.inputValue).toBe('');
+
+      store.scrub(1);
+      expect(store.inputValue).toBe('1');
+    });
+
+    it('scales the first step from zero to the currency', () => {
+      store.beginScrub('RUB');
+      store.scrub(1);
+      expect(store.inputValue).toBe('100');
+
+      store.endScrub();
+      store.clearInput();
+      store.beginScrub('JPY');
+      store.scrub(2);
+      expect(store.inputValue).toBe('150');
+    });
+
+    it('walks nice numbers from the current amount', () => {
+      store.selectCurrency('RUB');
+      store.updateInput('327');
+      store.beginScrub('RUB');
+
+      store.scrub(1);
+      expect(store.inputValue).toBe('400');
+      expect(store.getAmount('EUR')).toBeCloseTo(4);
+
+      store.scrub(-1);
+      expect(store.inputValue).toBe('300');
+    });
+
+    it('steps are relative to the origin, not the previous step', () => {
+      store.selectCurrency('RUB');
+      store.updateInput('327');
+      store.beginScrub('RUB');
+      store.scrub(3);
+      store.scrub(2);
+
+      expect(store.inputValue).toBe('500');
+    });
+
+    it('starts from the current amount of another currency', () => {
+      store.selectCurrency('EUR');
+      store.updateInput('10');
+
+      store.beginScrub('USD');
+      store.scrub(1);
+
+      expect(store.activeCurrency).toBe('USD');
+      expect(store.inputValue).toBe('15');
+    });
+
+    it('ignores scrub without begin', () => {
+      store.scrub(5);
+
+      expect(store.inputValue).toBe('');
+    });
+  });
+
+  describe('replaceCurrency', () => {
+    beforeEach(async () => {
+      await store.initialize();
+    });
+
+    it('replaces currency in slot and persists', async () => {
+      await store.replaceCurrency(1, 'JPY');
+
+      expect(store.selectedCurrencies).toEqual(['GEL', 'JPY', 'EUR', 'USD']);
+      expect(ports.storagePort.saveSelectedCurrencies).toHaveBeenCalledWith([
+        'GEL',
+        'JPY',
+        'EUR',
+        'USD',
+      ]);
+    });
+
+    it('swaps when the currency is already selected', async () => {
+      await store.replaceCurrency(0, 'USD');
+
+      expect(store.selectedCurrencies).toEqual(['USD', 'RUB', 'EUR', 'GEL']);
+    });
+
+    it('does nothing when picking the same currency', async () => {
+      await store.replaceCurrency(2, 'EUR');
+
+      expect(store.selectedCurrencies).toEqual(['GEL', 'RUB', 'EUR', 'USD']);
+      expect(ports.storagePort.saveSelectedCurrencies).not.toHaveBeenCalled();
+    });
+
+    it('keeps the typed amount when the active currency is replaced', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('10');
+
+      await store.replaceCurrency(2, 'JPY');
+
+      expect(store.activeCurrency).toBe('JPY');
+      expect(store.getAmount('JPY')).toBeCloseTo(10);
+    });
+
+    it('keeps the active currency and amount on swap', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('10');
+
+      await store.replaceCurrency(0, 'EUR');
+
+      expect(store.activeCurrency).toBe('EUR');
+      expect(store.getAmount('EUR')).toBeCloseTo(10);
+      expect(store.selectedCurrencies).toEqual(['EUR', 'RUB', 'GEL', 'USD']);
     });
   });
 
@@ -597,16 +765,52 @@ describe('CurrencyStore', () => {
       expect(ports.storagePort.saveConversionHistory).not.toHaveBeenCalled();
     });
 
-    it('keeps only last 10 entries', async () => {
+    it('keeps only last 50 entries', async () => {
       store.selectCurrency('EUR');
 
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 52; i++) {
         store.updateInput(String(i + 1));
         await store.saveToHistory();
       }
 
-      expect(store.conversionHistory).toHaveLength(10);
-      expect(store.conversionHistory[0].sourceAmount).toBe(12);
+      expect(store.conversionHistory).toHaveLength(50);
+      expect(store.conversionHistory[0].sourceAmount).toBe(52);
+    });
+
+    it('skips a repeat of the latest entry', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('100');
+      await store.saveToHistory();
+      await store.saveToHistory();
+
+      expect(store.conversionHistory).toHaveLength(1);
+    });
+
+    it('saves the same amount again after a different one', async () => {
+      store.selectCurrency('EUR');
+      for (const value of ['100', '200', '100']) {
+        store.updateInput(value);
+        await store.saveToHistory();
+      }
+
+      expect(store.conversionHistory).toHaveLength(3);
+    });
+
+    it('saves to history when scrubbing ends', async () => {
+      store.beginScrub('EUR');
+      store.scrub(3);
+      await store.endScrub();
+
+      expect(store.conversionHistory).toHaveLength(1);
+      expect(store.conversionHistory[0].sourceCurrency).toBe('EUR');
+    });
+
+    it('does not save when scrub ends without a scrub in progress', async () => {
+      store.selectCurrency('EUR');
+      store.updateInput('100');
+      await store.endScrub();
+
+      expect(store.conversionHistory).toHaveLength(0);
     });
 
     it('restores from history entry', async () => {
@@ -620,7 +824,7 @@ describe('CurrencyStore', () => {
       store.restoreFromHistory(store.conversionHistory[0]);
 
       expect(store.activeCurrency).toBe('EUR');
-      expect(store.inputValue).toBe('500,00');
+      expect(store.inputValue).toBe('500');
     });
   });
 });

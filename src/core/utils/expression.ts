@@ -12,6 +12,27 @@ const OPERATORS: Record<
 
 const isOperator = (ch: string): ch is Operator => ch in OPERATORS;
 
+const DISPLAY_OPERATORS: Record<Operator, string> = {
+  '+': '+',
+  '-': '−',
+  '*': '×',
+  '/': '÷',
+};
+
+const INPUT_OPERATORS: Record<string, Operator> = {
+  '−': '-',
+  '×': '*',
+  '÷': '/',
+};
+
+/** "10*2-1" → "10×2−1". Keeps length so cursor positions stay valid. */
+export const toDisplayExpression = (expression: string): string =>
+  expression.replace(/[-*/]/g, (op) => DISPLAY_OPERATORS[op as Operator]);
+
+/** "10×2−1" → "10*2-1" */
+export const fromDisplayExpression = (expression: string): string =>
+  expression.replace(/[−×÷]/g, (op) => INPUT_OPERATORS[op]);
+
 const tokenize = (expression: string): (number | Operator)[] => {
   const tokens: (number | Operator)[] = [];
   let numberBuffer = '';

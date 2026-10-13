@@ -1,5 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateExpression } from './expression';
+import {
+  evaluateExpression,
+  fromDisplayExpression,
+  toDisplayExpression,
+} from './expression';
+
+describe('toDisplayExpression', () => {
+  it('replaces ASCII operators with typographic ones', () => {
+    expect(toDisplayExpression('10*2-1/4+3')).toBe('10×2−1÷4+3');
+  });
+
+  it('preserves length', () => {
+    const input = '1,5*2-3';
+    expect(toDisplayExpression(input)).toHaveLength(input.length);
+  });
+});
+
+describe('fromDisplayExpression', () => {
+  it('replaces typographic operators with ASCII ones', () => {
+    expect(fromDisplayExpression('10×2−1÷4+3')).toBe('10*2-1/4+3');
+  });
+
+  it('round-trips', () => {
+    expect(fromDisplayExpression(toDisplayExpression('7*8-9/3'))).toBe(
+      '7*8-9/3'
+    );
+  });
+});
 
 describe('evaluateExpression', () => {
   it('returns 0 for empty string', () => {
