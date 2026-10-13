@@ -6,6 +6,33 @@ This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
 **Note:** Versions 25.x were released in 2026 with an incorrect year prefix. Starting from 26.2.3, the correct year is used.
 
+## [26.10.0] - 2026-10-13
+
+### Added
+
+- Drag a number left or right to scrub through round amounts, with haptic ticks
+- Long press on a currency block copies its amount
+- Currency search by code, name, country or city in English and Russian, symbol, and text typed in the wrong keyboard layout
+- Flags and full names in the currency picker; Return picks the top result
+- Scrubbing saves to history too
+- History shows Today / Yesterday and the time of each conversion
+
+### Changed
+
+- While typing, the edited currency expands and the others shrink so all stay visible above the keyboard
+- Amounts in all blocks share one font size and use tabular figures
+- Expressions show × ÷ − instead of * / -
+- Whole amounts are shown without trailing ",00"
+- Copy button moved next to the currency code
+- Picking a currency that is already on screen swaps the two instead of being disabled
+- History keeps 50 entries and skips repeats
+
+### Fixed
+
+- Logo overlapping the copy button in the last block
+- System Paste/Select menu popping up on tap in the input field and swallowing key presses
+- History entries made after midnight UTC grouped under the wrong day
+
 ## [26.3.0] - 2026-03-11
 
 ### Added
