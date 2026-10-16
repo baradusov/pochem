@@ -6,6 +6,12 @@ This project uses [CalVer](https://calver.org/) versioning: `YY.MM.patch`
 
 **Note:** Versions 25.x were released in 2026 with an incorrect year prefix. Starting from 26.2.3, the correct year is used.
 
+## [26.10.1] - 2026-10-16
+
+### Changed
+
+- App Store page in English and new screenshots
+
 ## [26.10.0] - 2026-10-13
 
 ### Added
