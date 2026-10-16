@@ -1,0 +1,3 @@
+# Simulator captures and rendered images are regenerated per release
+raw/
+upload/
